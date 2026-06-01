@@ -1,0 +1,2 @@
+// Canonical schema lives at apps/web/prisma/schema.prisma
+// Use apps/web for all Prisma CLI commands (npm run db:push --prefix apps/web)

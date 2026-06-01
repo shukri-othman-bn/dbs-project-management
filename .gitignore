@@ -1,0 +1,13 @@
+node_modules/
+.next/
+.env
+.env.*
+!.env.example
+*.db
+*.db-journal
+.DS_Store
+
+# Legacy Access migration artifacts (large; not needed for app review)
+template.accdb
+template.zip
+accdb_extract/

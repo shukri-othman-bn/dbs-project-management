@@ -1,0 +1,36 @@
+"use client";
+
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+import { formatCurrency } from "@/lib/utils";
+
+export function SectionBudgetChart({
+  data,
+}: {
+  data: { section: string; allocation: number; spent: number }[];
+}) {
+  if (data.length === 0) return null;
+  return (
+    <div className="h-72">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="section" tick={{ fontSize: 12 }} />
+          <YAxis tickFormatter={(v) => `${(Number(v) / 1000).toFixed(0)}k`} />
+          <Tooltip formatter={(v) => formatCurrency(Number(v))} />
+          <Legend />
+          <Bar dataKey="allocation" name="Allocation" fill="#475569" />
+          <Bar dataKey="spent" name="Spent" fill="#059669" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}

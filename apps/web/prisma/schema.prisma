@@ -1,0 +1,264 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  DIRECTOR
+  HOS
+  OFFICER
+  ADMIN
+}
+
+enum LifecycleStage {
+  planning
+  pre_contract
+  contract
+  ongoing
+  closed
+}
+
+enum ProjectType {
+  quotations
+  contract_works
+  consultancy
+  maintenance
+  other
+}
+
+enum BudgetLineType {
+  warrant
+  encumbrance
+  payment
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         Role      @default(OFFICER)
+  sectionId    String?
+  section      Section?  @relation(fields: [sectionId], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  projects     Project[] @relation("ProjectOic")
+}
+
+model Section {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  code      String?   @unique
+  unitLabel String?
+  users     User[]
+  projects  Project[]
+  createdAt DateTime  @default(now())
+}
+
+model FinancialYear {
+  id        String          @id @default(cuid())
+  label     String          @unique
+  startDate DateTime
+  endDate   DateTime
+  isCurrent Boolean         @default(false)
+  budgets   ProjectBudget[]
+  createdAt DateTime        @default(now())
+}
+
+model FundingType {
+  id           String    @id @default(cuid())
+  name         String    @unique
+  mainCategory String?
+  projects     Project[]
+  createdAt    DateTime  @default(now())
+}
+
+model Client {
+  id         String    @id @default(cuid())
+  ministry   String
+  department String?
+  projects   Project[]
+  createdAt  DateTime  @default(now())
+
+  @@unique([ministry, department])
+}
+
+model Project {
+  id                    String           @id @default(cuid())
+  projectNumber         String           @unique
+  title                 String
+  lifecycleStage        LifecycleStage   @default(planning)
+  projectType           ProjectType?
+  quotationOrContractNo String?
+  internalProjectNo     String?
+  toMonitor             Boolean          @default(false)
+  team                  String?
+  contractorName        String?
+  supervisingOfficer    String?
+  architectName         String?
+  clientsNotes          String?
+  sectionId             String?
+  section               Section?         @relation(fields: [sectionId], references: [id])
+  clientId              String?
+  client                Client?          @relation(fields: [clientId], references: [id])
+  fundingTypeId         String?
+  fundingType           FundingType?     @relation(fields: [fundingTypeId], references: [id])
+  oicUserId             String?
+  oic                   User?            @relation("ProjectOic", fields: [oicUserId], references: [id])
+  design                ProjectDesign?
+  tendering             ProjectTendering?
+  contract              ContractDetails?
+  completion            ProjectCompletion?
+  documents             ProjectDocuments?
+  statusUpdates         StatusUpdate[]
+  budgets               ProjectBudget[]
+  budgetLines           BudgetLine[]
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+}
+
+model ProjectDesign {
+  id                 String    @id @default(cuid())
+  projectId          String    @unique
+  project            Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  vote               String?
+  govtEstimate       Float?
+  contractPeriod     String?
+  designProjectNo    String?
+  designProgressAsOf DateTime?
+  archProgress       Float?
+  qsProgress         Float?
+  steProgress        Float?
+  meProgress         Float?
+  estimate           Float?
+  revisedEstimate    Float?
+  svAmount           Float?
+  remarks            String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model ProjectTendering {
+  id                         String    @id @default(cuid())
+  projectId                  String    @unique
+  project                    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tenderNo                   String?
+  openDate                   DateTime?
+  closingDate                DateTime?
+  extendedClosingDate        DateTime?
+  recommendationDate         DateTime?
+  awardedDate                DateTime?
+  approvedDate               DateTime?
+  loaDate                    DateTime?
+  startDateInLoa             DateTime?
+  completeDateInLoa          DateTime?
+  adRemarks                  String?
+  tenderValidityRemarks      String?
+  latestQuotationValidityDate DateTime?
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+}
+
+model ContractDetails {
+  id                    String    @id @default(cuid())
+  projectId             String    @unique
+  project               Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  mainContractor        String?
+  contractNo            String?
+  contractSum           Float?
+  revisedContractSum    Float?
+  contractPeriod        String?
+  contractStart         DateTime?
+  contractFinish        DateTime?
+  revisedContractFinish DateTime?
+  loaIssued             DateTime?
+  bgExpiry              DateTime?
+  performanceBondExpiry DateTime?
+  insuranceExpiry       DateTime?
+  contractSigned        DateTime?
+  cpcDate               DateTime?
+  cpcIssued             DateTime?
+  edlp                  DateTime?
+  finalAccountSum       Float?
+  retentionSum          Float?
+  remarks               String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model ProjectCompletion {
+  id                  String    @id @default(cuid())
+  projectId           String    @unique
+  project             Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  physicalActual      Float?
+  physicalScheduled   Float?
+  paymentActual       Float?
+  paymentScheduled    Float?
+  progressAsOf        DateTime?
+  completionDate      DateTime?
+  defectsLiabilityEnd DateTime?
+  finalAccountDate    DateTime?
+  remarks             String?
+  actionsRequired     String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+}
+
+model ProjectDocuments {
+  id                  String   @id @default(cuid())
+  projectId           String   @unique
+  project             Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  otherDocumentNotes  String?
+  submissionNotes     String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model StatusUpdate {
+  id                String   @id @default(cuid())
+  projectId         String
+  project           Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  progressAsOf      DateTime
+  physicalActual    Float    @default(0)
+  physicalScheduled Float    @default(0)
+  paymentActual     Float    @default(0)
+  paymentScheduled  Float    @default(0)
+  remarks           String?
+  actionsRequired   String?
+  createdById       String?
+  createdAt         DateTime @default(now())
+}
+
+model ProjectBudget {
+  id                 String        @id @default(cuid())
+  projectId          String
+  project            Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  financialYearId    String
+  financialYear      FinancialYear @relation(fields: [financialYearId], references: [id])
+  allocation         Float         @default(0)
+  encumbranceTotal   Float         @default(0)
+  encumbranceBalance Float         @default(0)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@unique([projectId, financialYearId])
+}
+
+model BudgetLine {
+  id              String         @id @default(cuid())
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  financialYearId String?
+  type            BudgetLineType
+  date            DateTime?
+  description     String?
+  amountApproved  Float          @default(0)
+  amountCertified Float?
+  amountBalance   Float?
+  voucherRef      String?
+  createdAt       DateTime       @default(now())
+}

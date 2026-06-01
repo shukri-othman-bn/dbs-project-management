@@ -1,0 +1,146 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+export function StatusUpdateForm({
+  projectId,
+  latest,
+}: {
+  projectId: string;
+  latest?: {
+    progressAsOf: Date;
+    physicalActual: number;
+    physicalScheduled: number;
+    paymentActual: number;
+    paymentScheduled: number;
+    remarks: string | null;
+    actionsRequired: string | null;
+  } | null;
+}) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const today = new Date().toISOString().split("T")[0];
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    const form = new FormData(e.currentTarget);
+    const res = await fetch(`/api/projects/${projectId}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        progressAsOf: form.get("progressAsOf"),
+        physicalActual: parseFloat(form.get("physicalActual") as string) || 0,
+        physicalScheduled: parseFloat(form.get("physicalScheduled") as string) || 0,
+        paymentActual: parseFloat(form.get("paymentActual") as string) || 0,
+        paymentScheduled: parseFloat(form.get("paymentScheduled") as string) || 0,
+        remarks: form.get("remarks"),
+        actionsRequired: form.get("actionsRequired"),
+      }),
+    });
+    setLoading(false);
+    if (res.ok) {
+      router.refresh();
+      (e.target as HTMLFormElement).reset();
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Quick Status Update</CardTitle>
+        <p className="text-sm text-slate-500">Weekly progress — saves in one step</p>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="progressAsOf">Progress as of</Label>
+            <Input
+              id="progressAsOf"
+              name="progressAsOf"
+              type="date"
+              defaultValue={today}
+              required
+            />
+          </div>
+          <div />
+          <div>
+            <Label htmlFor="physicalActual">Physical Actual %</Label>
+            <Input
+              id="physicalActual"
+              name="physicalActual"
+              type="number"
+              min="0"
+              max="100"
+              defaultValue={latest?.physicalActual ?? 0}
+            />
+          </div>
+          <div>
+            <Label htmlFor="physicalScheduled">Physical Scheduled %</Label>
+            <Input
+              id="physicalScheduled"
+              name="physicalScheduled"
+              type="number"
+              min="0"
+              max="100"
+              defaultValue={latest?.physicalScheduled ?? 0}
+            />
+          </div>
+          <div>
+            <Label htmlFor="paymentActual">Payment Actual %</Label>
+            <Input
+              id="paymentActual"
+              name="paymentActual"
+              type="number"
+              min="0"
+              max="100"
+              defaultValue={latest?.paymentActual ?? 0}
+            />
+          </div>
+          <div>
+            <Label htmlFor="paymentScheduled">Payment Scheduled %</Label>
+            <Input
+              id="paymentScheduled"
+              name="paymentScheduled"
+              type="number"
+              min="0"
+              max="100"
+              defaultValue={latest?.paymentScheduled ?? 0}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <Label htmlFor="remarks">Remarks</Label>
+            <textarea
+              id="remarks"
+              name="remarks"
+              rows={3}
+              defaultValue={latest?.remarks ?? ""}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <Label htmlFor="actionsRequired">Actions Required</Label>
+            <textarea
+              id="actionsRequired"
+              name="actionsRequired"
+              rows={2}
+              defaultValue={latest?.actionsRequired ?? ""}
+              placeholder="What needs attention from management?"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Saving..." : "Save Update"}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}

@@ -1,0 +1,14 @@
+{
+  "name": "dbs-project-management",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DBS Department Project & Budget Management Platform",
+  "scripts": {
+    "dev": "npm run dev --prefix apps/web",
+    "build": "npm run build --prefix apps/web",
+    "start": "npm run start --prefix apps/web",
+    "db:push": "npm run db:push --prefix apps/web",
+    "db:seed": "npm run db:seed --prefix apps/web",
+    "db:studio": "npm run db:studio --prefix apps/web"
+  }
+}

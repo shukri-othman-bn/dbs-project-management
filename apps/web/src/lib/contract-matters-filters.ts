@@ -1,0 +1,234 @@
+import { BudgetLineType, LifecycleStage, ProjectType } from "@prisma/client";
+import { PROJECT_TYPE_LABELS } from "./project-labels";
+import { STAGE_STATUS_LABELS } from "./project-labels";
+
+export const CONTRACT_MATTER_TABS = [
+  { id: "project", label: "Project" },
+  { id: "payment", label: "Payment" },
+  { id: "variation-order", label: "Variation Order" },
+  { id: "extension-of-time", label: "Extension of time" },
+  { id: "job-order", label: "Job Order" },
+  { id: "other", label: "Other" },
+  { id: "budget", label: "Budget" },
+  { id: "warrant", label: "Warrant" },
+  { id: "purchase-order", label: "Purchase Order" },
+  { id: "request", label: "Request" },
+  { id: "share-document", label: "Share Document" },
+  { id: "contractor", label: "Contractor" },
+] as const;
+
+export type ContractMatterTabId = (typeof CONTRACT_MATTER_TABS)[number]["id"];
+
+export const CONTRACT_MATTER_TAB_IDS = new Set(
+  CONTRACT_MATTER_TABS.map((t) => t.id)
+);
+
+export const DEFAULT_CONTRACT_MATTER_TAB: ContractMatterTabId = "project";
+
+/** Tabs that will show data once dedicated records exist in the system. */
+export const CONTRACT_MATTER_PLACEHOLDER_TABS = new Set<ContractMatterTabId>([
+  "variation-order",
+  "extension-of-time",
+  "job-order",
+  "other",
+  "purchase-order",
+  "request",
+  "share-document",
+]);
+
+export type ContractMatterProjectRow = {
+  id: string;
+  unit: string | null;
+  tenderNo: string | null;
+  quotationOrContractNo: string | null;
+  title: string;
+  contractorName: string | null;
+  startDate: string | null;
+  completionDate: string | null;
+  contractSum: number | null;
+  lifecycleStage: LifecycleStage;
+  projectType: ProjectType | null;
+  vote: string | null;
+  ministry: string | null;
+  department: string | null;
+  toMonitor: boolean;
+  allocation: number;
+  warrantApproved: number;
+  paymentsCertified: number;
+};
+
+export type ContractMatterLineRow = {
+  lineId: string;
+  projectId: string;
+  lineType: BudgetLineType;
+  unit: string | null;
+  tenderNo: string | null;
+  quotationOrContractNo: string | null;
+  title: string;
+  contractorName: string | null;
+  lifecycleStage: LifecycleStage;
+  projectType: ProjectType | null;
+  vote: string | null;
+  ministry: string | null;
+  department: string | null;
+  date: string | null;
+  description: string | null;
+  amountApproved: number;
+  amountCertified: number | null;
+  amountBalance: number | null;
+  voucherRef: string | null;
+};
+
+export function getContractMatterTabLabel(tab: ContractMatterTabId) {
+  return CONTRACT_MATTER_TABS.find((t) => t.id === tab)?.label ?? tab;
+}
+
+export function projectMatchesContractMatterSearch(
+  p: Pick<
+    ContractMatterProjectRow,
+    | "title"
+    | "tenderNo"
+    | "quotationOrContractNo"
+    | "contractorName"
+    | "unit"
+    | "vote"
+    | "ministry"
+    | "department"
+    | "projectType"
+  >,
+  query: string
+) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const haystack = [
+    p.title,
+    p.tenderNo,
+    p.quotationOrContractNo,
+    p.contractorName,
+    p.unit,
+    p.vote,
+    p.ministry,
+    p.department,
+    p.projectType ? PROJECT_TYPE_LABELS[p.projectType] : null,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(q);
+}
+
+export function collectContractMatterFilterOptions(
+  projects: ContractMatterProjectRow[]
+) {
+  const units = new Set<string>();
+  const votes = new Set<string>();
+  const contractors = new Set<string>();
+  const projectTypes = new Set<ProjectType>();
+  const statuses = new Set<string>();
+  const ministries = new Set<string>();
+  const departments = new Set<string>();
+
+  for (const p of projects) {
+    if (p.unit) units.add(p.unit);
+    if (p.vote) votes.add(p.vote);
+    if (p.contractorName) contractors.add(p.contractorName);
+    if (p.projectType) projectTypes.add(p.projectType);
+    statuses.add(STAGE_STATUS_LABELS[p.lifecycleStage]);
+    if (p.ministry) ministries.add(p.ministry);
+    if (p.department) departments.add(p.department);
+  }
+
+  return {
+    units: [...units].sort(),
+    votes: [...votes].sort(),
+    contractors: [...contractors].sort(),
+    projectTypes: [...projectTypes].sort((a, b) =>
+      PROJECT_TYPE_LABELS[a].localeCompare(PROJECT_TYPE_LABELS[b])
+    ),
+    statuses: [...statuses].sort(),
+    ministries: [...ministries].sort(),
+    departments: [...departments].sort(),
+  };
+}
+
+export function filterContractMatterProjects(
+  projects: ContractMatterProjectRow[],
+  filters: {
+    search: string;
+    unit: string;
+    vote: string;
+    contractor: string;
+    projectType: string;
+    projectStatus: string;
+    ministry: string;
+    department: string;
+  }
+) {
+  return projects.filter((p) => {
+    if (!projectMatchesContractMatterSearch(p, filters.search)) return false;
+    if (filters.unit && p.unit !== filters.unit) return false;
+    if (filters.vote && p.vote !== filters.vote) return false;
+    if (filters.contractor && p.contractorName !== filters.contractor) return false;
+    if (filters.projectType && p.projectType !== filters.projectType) return false;
+    if (
+      filters.projectStatus &&
+      STAGE_STATUS_LABELS[p.lifecycleStage] !== filters.projectStatus
+    ) {
+      return false;
+    }
+    if (filters.ministry && p.ministry !== filters.ministry) return false;
+    if (filters.department && p.department !== filters.department) return false;
+    return true;
+  });
+}
+
+export function filterContractMatterLines(
+  lines: ContractMatterLineRow[],
+  filters: {
+    search: string;
+    unit: string;
+    vote: string;
+    contractor: string;
+    projectType: string;
+    projectStatus: string;
+    ministry: string;
+    department: string;
+  }
+) {
+  return lines.filter((row) => {
+    const pseudo: ContractMatterProjectRow = {
+      id: row.projectId,
+      unit: row.unit,
+      tenderNo: row.tenderNo,
+      quotationOrContractNo: row.quotationOrContractNo,
+      title: row.title,
+      contractorName: row.contractorName,
+      startDate: null,
+      completionDate: null,
+      contractSum: null,
+      lifecycleStage: row.lifecycleStage,
+      projectType: row.projectType,
+      vote: row.vote,
+      ministry: row.ministry,
+      department: row.department,
+      toMonitor: false,
+      allocation: 0,
+      warrantApproved: 0,
+      paymentsCertified: 0,
+    };
+    if (!projectMatchesContractMatterSearch(pseudo, filters.search)) return false;
+    if (filters.unit && row.unit !== filters.unit) return false;
+    if (filters.vote && row.vote !== filters.vote) return false;
+    if (filters.contractor && row.contractorName !== filters.contractor) return false;
+    if (filters.projectType && row.projectType !== filters.projectType) return false;
+    if (
+      filters.projectStatus &&
+      STAGE_STATUS_LABELS[row.lifecycleStage] !== filters.projectStatus
+    ) {
+      return false;
+    }
+    if (filters.ministry && row.ministry !== filters.ministry) return false;
+    if (filters.department && row.department !== filters.department) return false;
+    return true;
+  });
+}
