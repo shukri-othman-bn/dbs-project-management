@@ -1,5 +1,8 @@
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { getDepartmentBudgetSummary, getProjectsWithBudget } from "@/lib/data";
+
+export const dynamic = "force-dynamic";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RagBadge, StageBadge } from "@/components/ui/badge";
@@ -9,7 +12,8 @@ import { SectionBudgetChart } from "@/components/charts/section-budget-chart";
 
 export default async function DashboardPage() {
   const session = await auth();
-  const user = session!.user;
+  if (!session?.user) redirect("/login");
+  const user = session.user;
   const projects = await getProjectsWithBudget(user);
   const { totals, bySection } = await getDepartmentBudgetSummary(user);
 

@@ -1,0 +1,38 @@
+"use client";
+
+import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+
+export default function AppError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 p-6 text-center">
+      <h1 className="text-xl font-semibold text-slate-900">Something went wrong</h1>
+      <p className="max-w-md text-sm text-slate-600">
+        The app could not load this page. This is often caused by the database not being
+        connected or not seeded yet on DigitalOcean.
+      </p>
+      {error.digest && (
+        <p className="text-xs text-slate-400">Reference: {error.digest}</p>
+      )}
+      <div className="flex gap-2">
+        <Button onClick={() => reset()}>Try again</Button>
+        <Button variant="outline" onClick={() => (window.location.href = "/login")}>
+          Go to login
+        </Button>
+      </div>
+      <p className="text-xs text-slate-400">
+        Admin: open <code className="rounded bg-slate-200 px-1">/api/health</code> to check the database.
+      </p>
+    </div>
+  );
+}

@@ -164,6 +164,7 @@ npm run dev
 | Login fails / UntrustedHost | Set `AUTH_TRUST_HOST=true` and `AUTH_URL=${APP_URL}` |
 | 500 on all pages | Check **Runtime Logs**; run `db-setup` job or `npm run db:deploy` locally against DO DB once |
 | Empty database | Re-run deploy or trigger **db-setup** job manually |
+| **Blank white page** | Open `/api/health` — if `ok: false`, fix `DATABASE_URL` and run `npm run db:deploy` in DO **Console**. Try `/login` in incognito. |
 
 ---
 
