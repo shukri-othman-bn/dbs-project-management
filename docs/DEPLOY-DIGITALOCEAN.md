@@ -158,6 +158,7 @@ npm run dev
 
 | Problem | Fix |
 |--------|-----|
+| **Build Error: Non-Zero Exit** | Open **Activity → Go to Build Logs**. Common fixes: set `AUTH_SECRET` (encrypted), ensure `DATABASE_URL` = `${dbs-db.DATABASE_URL}` for build+run, push latest `main` (includes monorepo/Turbopack fix). |
 | Build fails on Prisma | Ensure `DATABASE_URL` is set for **Build & Run** |
 | Login fails / UntrustedHost | Set `AUTH_TRUST_HOST=true` and `AUTH_URL=${APP_URL}` |
 | 500 on all pages | Check **Runtime Logs**; run `db-setup` job or `npm run db:deploy` locally against DO DB once |
