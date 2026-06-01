@@ -43,7 +43,7 @@ git push
 
 | Setting | Value |
 |--------|--------|
-| **Source directory** | `apps/web` |
+| **Source directory** | `apps/web` (**required** — if left blank, DO builds from repo root and `prisma` will not be found) |
 | **Type** | Web Service |
 | **Build command** | `npm ci && npm run build` |
 | **Run command** | `npm start` |
@@ -159,6 +159,7 @@ npm run dev
 | Problem | Fix |
 |--------|-----|
 | **Build Error: Non-Zero Exit** | Open **Activity → Go to Build Logs**. Common fixes: set `AUTH_SECRET` (encrypted), ensure `DATABASE_URL` = `${dbs-db.DATABASE_URL}` for build+run, push latest `main` (includes monorepo/Turbopack fix). |
+| **`prisma: not found`** | Set **Source directory** to `apps/web`, or use latest root `package.json` `build` script (`cd apps/web && npm ci && npm run build`). |
 | Build fails on Prisma | Ensure `DATABASE_URL` is set for **Build & Run** |
 | Login fails / UntrustedHost | Set `AUTH_TRUST_HOST=true` and `AUTH_URL=${APP_URL}` |
 | 500 on all pages | Check **Runtime Logs**; run `db-setup` job or `npm run db:deploy` locally against DO DB once |
