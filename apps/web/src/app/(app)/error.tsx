@@ -26,7 +26,7 @@ export default function AppError({
       )}
       <div className="flex gap-2">
         <Button onClick={() => reset()}>Try again</Button>
-        <Button variant="outline" onClick={() => (window.location.href = "/login")}>
+        <Button variant="secondary" onClick={() => (window.location.href = "/login")}>
           Go to login
         </Button>
       </div>
