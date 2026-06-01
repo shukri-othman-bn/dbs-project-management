@@ -2,6 +2,9 @@
   "name": "web",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
@@ -11,6 +14,7 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
+    "db:deploy": "prisma db push && prisma db seed",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate"
   },

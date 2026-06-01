@@ -4,8 +4,15 @@ Web application for department project visibility and financial year budget moni
 
 ## Quick start
 
+Start PostgreSQL (Docker example):
+
+```bash
+docker run -d --name dbs-pg -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=dbs postgres:16
+```
+
 ```bash
 cd apps/web
+cp .env.example .env   # or copy on Windows
 npm install
 npx prisma db push
 npm run db:seed
@@ -35,8 +42,9 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ## Database
 
-- **Development:** SQLite (`apps/web/prisma/dev.db`)
-- **Production:** Set `DATABASE_URL` to PostgreSQL in `apps/web/.env` and change `provider` in `prisma/schema.prisma` to `postgresql`, then run `npx prisma db push`.
+- **PostgreSQL** via Prisma (`apps/web/prisma/schema.prisma`)
+- **Local:** Docker Postgres or any Postgres instance — see [docs/DEPLOY-DIGITALOCEAN.md](docs/DEPLOY-DIGITALOCEAN.md)
+- **Production (DigitalOcean):** App Platform + managed Postgres — full steps in [docs/DEPLOY-DIGITALOCEAN.md](docs/DEPLOY-DIGITALOCEAN.md)
 
 ## Project structure
 
@@ -53,6 +61,10 @@ apps/web/           Next.js application
 
 Copy `apps/web/.env.example` to `apps/web/.env` and set:
 
-- `DATABASE_URL` — database connection
+- `DATABASE_URL` — PostgreSQL connection string
 - `AUTH_SECRET` — random string for session signing
-- `NEXTAUTH_URL` — app URL (e.g. http://localhost:3000)
+- `AUTH_URL` / `NEXTAUTH_URL` — app URL (e.g. http://localhost:3000)
+
+## Deploy (public URL for review)
+
+**DigitalOcean App Platform:** [docs/DEPLOY-DIGITALOCEAN.md](docs/DEPLOY-DIGITALOCEAN.md)

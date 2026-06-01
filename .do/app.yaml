@@ -1,0 +1,57 @@
+# DigitalOcean App Platform spec — import in DO or commit and point App Platform at this file.
+# Repo: https://github.com/shukri-othman-bn/dbs-project-management
+
+name: dbs-project-management
+region: sgp
+
+databases:
+  - name: dbs-db
+    engine: PG
+    version: "16"
+
+jobs:
+  - name: db-setup
+    kind: PRE_DEPLOY
+    github:
+      repo: shukri-othman-bn/dbs-project-management
+      branch: main
+      deploy_on_push: true
+    source_dir: /apps/web
+    environment_slug: node-js
+    run_command: npm ci && npm run db:deploy
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${dbs-db.DATABASE_URL}
+
+services:
+  - name: web
+    github:
+      repo: shukri-othman-bn/dbs-project-management
+      branch: main
+      deploy_on_push: true
+    source_dir: /apps/web
+    environment_slug: node-js
+    http_port: 3000
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    build_command: npm ci && npm run build
+    run_command: npm start
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ${dbs-db.DATABASE_URL}
+      - key: AUTH_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: AUTH_URL
+        scope: RUN_TIME
+        value: ${APP_URL}
+      - key: NEXTAUTH_URL
+        scope: RUN_TIME
+        value: ${APP_URL}
+      - key: AUTH_TRUST_HOST
+        scope: RUN_TIME
+        value: "true"

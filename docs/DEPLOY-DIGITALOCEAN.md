@@ -1,0 +1,174 @@
+# Deploy to DigitalOcean (App Platform + PostgreSQL)
+
+This guide gets a **public URL** (e.g. `https://dbs-project-management-xxxxx.ondigitalocean.app`) so you can open the app from any PC.
+
+You only need **DigitalOcean** — no Supabase required.
+
+---
+
+## What you need
+
+- DigitalOcean account
+- GitHub repo: `https://github.com/shukri-othman-bn/dbs-project-management`
+- ~10 minutes in the DO control panel
+
+Estimated cost (review/demo): **~$5–12/month** (smallest app + dev database). Check current pricing on [DigitalOcean App Platform](https://www.digitalocean.com/pricing/app-platform).
+
+---
+
+## Part 1 — Push latest code to GitHub
+
+On your dev PC:
+
+```powershell
+cd "d:\DBS PROJECT MANAGEMENT"
+git add -A
+git commit -m "Add DigitalOcean App Platform deployment config"
+git push
+```
+
+---
+
+## Part 2 — Create the app on DigitalOcean
+
+1. Go to [https://cloud.digitalocean.com/apps](https://cloud.digitalocean.com/apps)
+2. Click **Create App**
+3. **Source:** GitHub → authorize DO if asked → select repo **`dbs-project-management`**
+4. Branch: **`main`**
+5. If DO asks to use an app spec: choose **Edit App Spec** and paste the contents of [`.do/app.yaml`](../.do/app.yaml), **or** configure manually (Part 3).
+
+---
+
+## Part 3 — Manual settings (if not using app spec)
+
+| Setting | Value |
+|--------|--------|
+| **Source directory** | `apps/web` |
+| **Type** | Web Service |
+| **Build command** | `npm ci && npm run build` |
+| **Run command** | `npm start` |
+| **HTTP port** | `3000` |
+| **Region** | Singapore (`sgp`) recommended |
+
+### Add PostgreSQL database
+
+1. On the create-app flow, click **Add Resource** → **Database**
+2. **PostgreSQL 16**
+3. Name: `dbs-db` (must match `${dbs-db.DATABASE_URL}` in the spec)
+
+### Environment variables (web service)
+
+| Key | Value | Encrypted? |
+|-----|--------|------------|
+| `DATABASE_URL` | `${dbs-db.DATABASE_URL}` | Yes (bindable) |
+| `AUTH_SECRET` | Generate: run `openssl rand -base64 32` or use a long random string | **Yes** |
+| `AUTH_URL` | `${APP_URL}` | No |
+| `NEXTAUTH_URL` | `${APP_URL}` | No |
+| `AUTH_TRUST_HOST` | `true` | No |
+| `NODE_ENV` | `production` | No |
+
+**Important:** `AUTH_SECRET` must be set before the first successful login.
+
+### Pre-deploy job (database tables + demo data)
+
+Add a **Job** component:
+
+| Setting | Value |
+|--------|--------|
+| **Name** | `db-setup` |
+| **Kind** | **Before Deploy** (PRE_DEPLOY) |
+| **Source directory** | `apps/web` |
+| **Run command** | `npm ci && npm run db:deploy` |
+| **Env** | `DATABASE_URL` = `${dbs-db.DATABASE_URL}` |
+
+The seed script uses `upsert`, so re-runs are safe.
+
+---
+
+## Part 4 — Deploy
+
+1. Review plan/size (start with smallest **Basic** web instance if budget matters)
+2. Click **Create Resources** / **Deploy**
+3. Wait 5–15 minutes for build + deploy (first deploy is slower)
+
+---
+
+## Part 5 — Your review URL
+
+When deploy shows **Active**:
+
+1. Open the app in DO → copy **Live URL** (e.g. `https://dbs-project-management-xxxxx.ondigitalocean.app`)
+2. Share that link — works from **any PC/browser**
+3. Log in with demo accounts (password `password123`):
+
+| Role | Email |
+|------|--------|
+| Director | director@dbs.gov.bn |
+| Admin | admin@dbs.gov.bn |
+| Officer | officer1@dbs.gov.bn |
+
+---
+
+## Part 6 — Updates after code changes
+
+```powershell
+git add -A
+git commit -m "Your change description"
+git push
+```
+
+DO redeploys automatically if **deploy on push** is enabled.
+
+---
+
+## Local development (after PostgreSQL switch)
+
+The app now uses **PostgreSQL** (not SQLite). Options:
+
+**A — Docker (easiest on Windows):**
+
+```powershell
+docker run -d --name dbs-pg -p 5432:5432 -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=dbs postgres:16
+```
+
+In `apps/web/.env`:
+
+```
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/dbs"
+AUTH_SECRET="local-dev-secret"
+AUTH_URL="http://localhost:3000"
+NEXTAUTH_URL="http://localhost:3000"
+```
+
+Then:
+
+```powershell
+cd apps/web
+npm install
+npx prisma db push
+npm run db:seed
+npm run dev
+```
+
+**B — Use the DO database connection string** in local `.env` (only for debugging; not ideal for daily dev).
+
+---
+
+## Troubleshooting
+
+| Problem | Fix |
+|--------|-----|
+| Build fails on Prisma | Ensure `DATABASE_URL` is set for **Build & Run** |
+| Login fails / UntrustedHost | Set `AUTH_TRUST_HOST=true` and `AUTH_URL=${APP_URL}` |
+| 500 on all pages | Check **Runtime Logs**; run `db-setup` job or `npm run db:deploy` locally against DO DB once |
+| Empty database | Re-run deploy or trigger **db-setup** job manually |
+
+---
+
+## Optional: use existing DO Managed Database
+
+If you already created Postgres on DO:
+
+1. Skip adding a new DB in the app spec
+2. Set `DATABASE_URL` to that cluster’s connection string (with `sslmode=require`)
+3. Run `npm run db:deploy` once from your PC with that URL exported
