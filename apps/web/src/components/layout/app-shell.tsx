@@ -1,9 +1,10 @@
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { Sidebar } from "./sidebar";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const session = await auth();
-  if (!session?.user) return null;
+  if (!session?.user) redirect("/login");
 
   return (
     <div className="flex min-h-screen bg-slate-50">
