@@ -14,7 +14,9 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "db:deploy": "prisma db push && prisma db seed",
+    "db:bootstrap": "prisma db execute --file scripts/grant-public-schema.sql",
+    "db:deploy": "npm run db:bootstrap && prisma db push && prisma db seed",
+    "do:setup": "node scripts/run-do-setup.mjs",
     "db:studio": "prisma studio",
     "postinstall": "npx prisma generate"
   },

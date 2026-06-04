@@ -1,0 +1,21 @@
+-- =============================================================================
+-- FULL GRANT — run as the APP user (same as DATABASE_URL), after admin grants
+-- For database-level grants, use grant-public-schema-admin.sql as doadmin first.
+-- =============================================================================
+
+-- Schema public
+GRANT USAGE ON SCHEMA public TO CURRENT_USER;
+GRANT CREATE ON SCHEMA public TO CURRENT_USER;
+GRANT ALL PRIVILEGES ON SCHEMA public TO CURRENT_USER;
+
+-- Existing objects
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO CURRENT_USER;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO CURRENT_USER;
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO CURRENT_USER;
+GRANT ALL PRIVILEGES ON ALL ROUTINES IN SCHEMA public TO CURRENT_USER;
+
+-- Future objects
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO CURRENT_USER;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO CURRENT_USER;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO CURRENT_USER;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TYPES TO CURRENT_USER;

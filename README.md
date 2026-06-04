@@ -44,7 +44,8 @@ Open [http://localhost:3000](http://localhost:3000)
 
 - **PostgreSQL** via Prisma (`apps/web/prisma/schema.prisma`)
 - **Local:** Docker Postgres or any Postgres instance — see [docs/DEPLOY-DIGITALOCEAN.md](docs/DEPLOY-DIGITALOCEAN.md)
-- **Production (DigitalOcean):** App Platform + managed Postgres — full steps in [docs/DEPLOY-DIGITALOCEAN.md](docs/DEPLOY-DIGITALOCEAN.md)
+- **Production (recommended):** [Railway](docs/DEPLOY-RAILWAY.md) — Next.js + Postgres, no manual schema grants
+- **Legacy:** [DigitalOcean](docs/DEPLOY-DIGITALOCEAN.md) — App Platform + managed Postgres
 
 ## Project structure
 
@@ -67,4 +68,6 @@ Copy `apps/web/.env.example` to `apps/web/.env` and set:
 
 ## Deploy (public URL for review)
 
-**DigitalOcean App Platform:** [docs/DEPLOY-DIGITALOCEAN.md](docs/DEPLOY-DIGITALOCEAN.md)
+**Railway (recommended):** [docs/DEPLOY-RAILWAY.md](docs/DEPLOY-RAILWAY.md)
+
+**DigitalOcean (legacy):** [docs/DEPLOY-DIGITALOCEAN.md](docs/DEPLOY-DIGITALOCEAN.md)

@@ -1,0 +1,2 @@
+postgresql://doadmin:PASSWORD@HOST:25060/dbs-db?sslmode=require
+dbs-db

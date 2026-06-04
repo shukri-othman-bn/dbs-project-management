@@ -164,7 +164,35 @@ npm run dev
 | Login fails / UntrustedHost | Set `AUTH_TRUST_HOST=true` and `AUTH_URL=${APP_URL}` |
 | 500 on all pages | Check **Runtime Logs**; run `db-setup` job or `npm run db:deploy` locally against DO DB once |
 | Empty database | Re-run deploy or trigger **db-setup** job manually |
+| **`permission denied for schema public`** (db-setup / `prisma db push`) | PostgreSQL 15+ on DigitalOcean: the app DB user needs CREATE on `public`. See **Fix: schema public permissions** below. |
 | **Blank white page** | Open `/api/health` — if `ok: false`, fix `DATABASE_URL` and run `npm run db:deploy` in DO **Console**. Try `/login` in incognito. |
+
+### Fix: schema public permissions
+
+If **db-setup** fails with `permission denied for schema public`:
+
+1. In DigitalOcean, open your Postgres (**`dbs-db`** component → **Connection Details**, or the **Databases** page for a managed cluster).
+2. Connect with the **admin** user (`doadmin` on managed DB, or the primary user from connection details — not a read-only pool URL).
+3. Run the **full grant** script once. Edit placeholders, then execute in DO SQL console or `psql`:
+
+   File: [`apps/web/scripts/grant-public-schema-admin.sql`](../apps/web/scripts/grant-public-schema-admin.sql)
+
+   Replace:
+   - `YOUR_APP_DB_USER` — username from `${dbs-db.DATABASE_URL}` (before `@`)
+   - `YOUR_DATABASE_NAME` — database name from the URL (after the last `/`, before `?`)
+
+4. **Redeploy** the app (or re-run **db-setup**).
+
+From your PC (if you have `psql`), with the **admin** connection string:
+
+```powershell
+cd "d:\DBS PROJECT MANAGEMENT\apps\web"
+# Edit scripts/grant-public-schema-admin.sql placeholders first, then:
+psql $env:DATABASE_URL -f scripts/grant-public-schema-admin.sql
+npm run db:deploy
+```
+
+Deploy also runs `npm run db:bootstrap` (`scripts/grant-public-schema.sql` as the app user). You still need the **admin** script once on DigitalOcean.
 
 ---
 
