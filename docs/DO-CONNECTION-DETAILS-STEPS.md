@@ -59,7 +59,7 @@ Wait until **Active**. Check:
 **dbs-project-management** → **Console**:
 
 ```bash
-npm run db:deploy
+npm run db:deploy:do
 ```
 
 Then check `/api/health` again.

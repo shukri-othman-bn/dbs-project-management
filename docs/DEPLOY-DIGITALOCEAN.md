@@ -78,7 +78,7 @@ Add a **Job** component:
 | **Name** | `db-setup` |
 | **Kind** | **Before Deploy** (PRE_DEPLOY) |
 | **Source directory** | `apps/web` |
-| **Run command** | `npm ci && npm run db:deploy` |
+| **Run command** | `npm ci && npm run db:deploy:do` |
 | **Env** | `DATABASE_URL` = `${dbs-db.DATABASE_URL}` |
 
 The seed script uses `upsert`, so re-runs are safe.
@@ -192,7 +192,7 @@ psql $env:DATABASE_URL -f scripts/grant-public-schema-admin.sql
 npm run db:deploy
 ```
 
-Deploy also runs `npm run db:bootstrap` (`scripts/grant-public-schema.sql` as the app user). You still need the **admin** script once on DigitalOcean.
+Deploy also runs `npm run db:deploy:do` (includes `db:bootstrap` / `scripts/grant-public-schema.sql` as the app user). You still need the **admin** script once on DigitalOcean. Railway uses `npm run db:deploy` without bootstrap — see [DEPLOY-RAILWAY.md](DEPLOY-RAILWAY.md).
 
 ---
 

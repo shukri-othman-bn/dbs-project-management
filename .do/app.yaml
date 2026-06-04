@@ -18,7 +18,7 @@ jobs:
       deploy_on_push: true
     source_dir: /apps/web
     environment_slug: node-js
-    run_command: npm ci && npm run db:deploy
+    run_command: npm ci && npm run db:deploy:do
     envs:
       - key: DATABASE_URL
         scope: RUN_TIME
