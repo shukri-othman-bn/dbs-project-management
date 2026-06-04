@@ -1,5 +1,7 @@
 [build]
 builder = "NIXPACKS"
+# Do not run npm ci here — Railpack already installs deps; npm ci again causes EBUSY on node_modules/.cache
+buildCommand = "npm run build"
 
 [deploy]
 startCommand = "npm start"

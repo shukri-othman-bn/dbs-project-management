@@ -51,7 +51,7 @@ Railway does **not** create a service named `web`. You get one box per deployabl
 | Section | Field | Value |
 |--------|--------|--------|
 | Source | **Root Directory** | `/apps/web` (or leave empty and use root build — see below) |
-| Build | **Custom Build Command** | `npm ci && npm run build` |
+| Build | **Custom Build Command** | `npm run build` only — **do not** add `npm ci` (Railway installs deps first; `npm ci` in build causes `EBUSY` on `node_modules/.cache`) |
 | Deploy | **Custom Start Command** | `npm start` |
 | Deploy | **Pre-Deploy Command** | `npm run db:deploy` |
 
@@ -141,6 +141,7 @@ See [DEPLOY-DIGITALOCEAN.md — Local development](DEPLOY-DIGITALOCEAN.md#local-
 | Problem | Fix |
 |--------|-----|
 | Build fails `prisma not found` | Root Directory must be `apps/web` |
+| **`EBUSY` / `rmdir node_modules/.cache`** | Remove `npm ci` from Build Command — use `npm run build` only; redeploy. If it persists, add variable `NO_CACHE=1`, redeploy once, then remove it |
 | Release fails on DB | Check `DATABASE_URL` is set on **web** service; Postgres plugin is in same project |
 | `/api/health` `ok: false`, no `DATABASE_URL` | Add `DATABASE_URL` variable; redeploy |
 | Login fails | Set `AUTH_SECRET`, `AUTH_URL`, `NEXTAUTH_URL`, `AUTH_TRUST_HOST=true` |

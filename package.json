@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "npm run dev --prefix apps/web",
-    "build": "cd apps/web && npm ci && npm run build",
+    "build": "cd apps/web && npm run build",
     "start": "cd apps/web && npm run start",
     "db:push": "npm run db:push --prefix apps/web",
     "db:seed": "npm run db:seed --prefix apps/web",
