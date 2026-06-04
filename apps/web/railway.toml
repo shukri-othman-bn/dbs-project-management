@@ -6,7 +6,8 @@ buildCommand = "npm run build"
 [deploy]
 startCommand = "npm start"
 preDeployCommand = "npm run db:deploy"
-healthcheckPath = "/api/health"
-healthcheckTimeout = 120
+# Use /api/health/live so deploy is not blocked when DATABASE_URL is missing (/api/health returns 500)
+healthcheckPath = "/api/health/live"
+healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

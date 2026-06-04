@@ -142,6 +142,7 @@ See [DEPLOY-DIGITALOCEAN.md — Local development](DEPLOY-DIGITALOCEAN.md#local-
 |--------|-----|
 | Build fails `prisma not found` | Root Directory must be `apps/web` |
 | **`EBUSY` / `rmdir node_modules/.cache`** | Remove `npm ci` from Build Command — use `npm run build` only; redeploy. If it persists, add variable `NO_CACHE=1`, redeploy once, then remove it |
+| **Deploy stuck “Deploying” for hours** | App may be running but health check fails. Open `/api/health` — if `databaseUrl: false`, add `DATABASE_URL` on the **app** service (not Postgres). Use health check path `/api/health/live` or clear Healthcheck Path, then redeploy |
 | Release fails on DB | Check `DATABASE_URL` is set on **web** service; Postgres plugin is in same project |
 | `/api/health` `ok: false`, no `DATABASE_URL` | Add `DATABASE_URL` variable; redeploy |
 | Login fails | Set `AUTH_SECRET`, `AUTH_URL`, `NEXTAUTH_URL`, `AUTH_TRUST_HOST=true` |
