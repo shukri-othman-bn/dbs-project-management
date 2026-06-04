@@ -24,20 +24,45 @@ Estimated cost: **~$5/month** (Hobby usage; check [Railway pricing](https://rail
 
 ---
 
-## Step 2 — Configure the web service
+## Step 2 — Find your app service settings (not “web”)
 
-Open the **web** service → **Settings**:
+Railway does **not** create a service named `web`. You get one box per deployable thing on the **project canvas**:
 
-| Setting | Value |
-|--------|--------|
-| **Root Directory** | `apps/web` |
-| **Build Command** | `npm ci && npm run build` |
-| **Start Command** | `npm start` |
-| **Release Command** | `npm run db:deploy` |
+| Box on canvas | What it is |
+|---------------|------------|
+| **GitHub repo name** (e.g. `dbs-project-management`) | Your Next.js app — **configure this one** |
+| **Postgres** (database icon) | Database only — variables live here too |
 
-The release command runs `prisma db push` and seeds demo data **before** each deploy goes live.
+**Open settings:**
 
-Optional: this repo includes [`apps/web/railway.toml`](../apps/web/railway.toml) with start/release commands if Railway detects it.
+1. Open your [Railway project](https://railway.com/dashboard).
+2. On the canvas, **click the GitHub / repo service** (not Postgres).
+3. You should see tabs across the top: **Deployments**, **Variables**, **Metrics**, **Settings** (names can vary slightly).
+4. Click **Settings**, then **scroll down** — options are in sections, not one “web service” page:
+   - **Source** → **Root Directory**
+   - **Build** → **Custom Build Command**
+   - **Deploy** → **Custom Start Command** and **Pre-Deploy Command** (this is what we called “release command”)
+   - **Networking** → **Generate Domain** / public URL
+
+**If you do not see a Settings tab:** you may be on the **project** view. Click **into** the service tile first until you see Deployments / Variables / Settings for that service only.
+
+### Values to set (repo service)
+
+| Section | Field | Value |
+|--------|--------|--------|
+| Source | **Root Directory** | `/apps/web` (or leave empty and use root build — see below) |
+| Build | **Custom Build Command** | `npm ci && npm run build` |
+| Deploy | **Custom Start Command** | `npm start` |
+| Deploy | **Pre-Deploy Command** | `npm run db:deploy` |
+
+Pre-deploy runs `prisma db push` + seed **before** the new version goes live.
+
+**Root directory — two valid setups:**
+
+- **`/apps/web`** — app builds inside `apps/web` (matches DigitalOcean).
+- **Empty `/` (repo root)** — also works: root [`package.json`](../package.json) already runs `cd apps/web && npm ci && npm run build` and `npm start`.
+
+**Config file:** [`apps/web/railway.toml`](../apps/web/railway.toml) is only picked up if Railway finds it. Because it lives under `apps/web`, set **Settings → Config-as-code file path** to `/apps/web/railway.toml`, **or** enter the Pre-Deploy / Start commands manually in **Deploy** (dashboard is enough).
 
 ---
 
@@ -48,9 +73,9 @@ Optional: this repo includes [`apps/web/railway.toml`](../apps/web/railway.toml)
 
 ---
 
-## Step 4 — Environment variables (web service)
+## Step 4 — Environment variables (repo service)
 
-**web** service → **Variables**:
+Click the **GitHub repo service** → **Variables** tab (not under Settings):
 
 | Key | Value |
 |-----|--------|

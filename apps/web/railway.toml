@@ -3,7 +3,7 @@ builder = "NIXPACKS"
 
 [deploy]
 startCommand = "npm start"
-releaseCommand = "npm run db:deploy"
+preDeployCommand = "npm run db:deploy"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
