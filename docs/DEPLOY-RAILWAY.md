@@ -79,7 +79,7 @@ Click the **GitHub repo service** → **Variables** tab (not under Settings):
 
 | Key | Value |
 |-----|--------|
-| `DATABASE_URL` | Reference: `${{Postgres.DATABASE_URL}}` (adjust service name if yours differs) |
+| `DATABASE_URL` | **Reference** `${{Postgres.DATABASE_URL}}` (recommended — updates when Postgres password changes). If you pasted a URL manually, you must update it after every password reset, then redeploy |
 | `AUTH_SECRET` | Long random string — e.g. PowerShell: `[Convert]::ToBase64String((1..32|%{Get-Random -Max 256}))` |
 | `AUTH_URL` | Your Railway public URL, e.g. `https://dbs-project-management-production.up.railway.app` |
 | `NEXTAUTH_URL` | Same as `AUTH_URL` |

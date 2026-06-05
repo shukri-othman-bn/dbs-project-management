@@ -5,8 +5,9 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const isLoginPage = req.nextUrl.pathname === "/login";
   const isApiAuth = req.nextUrl.pathname.startsWith("/api/auth");
+  const isHealth = req.nextUrl.pathname.startsWith("/api/health");
 
-  if (isApiAuth) return NextResponse.next();
+  if (isApiAuth || isHealth) return NextResponse.next();
 
   if (!isLoggedIn && !isLoginPage) {
     return NextResponse.redirect(new URL("/login", req.nextUrl));
