@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormSaveActions, useFormDirty } from "@/components/ui/form-save-actions";
+import { STAGE_STATUS_LABELS } from "@/lib/project-labels";
 
 type Option = { id: string; name?: string; ministry?: string; department?: string | null };
 
@@ -47,6 +49,8 @@ export function ProjectForm({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { dirty, resetDirty, formTrackProps } = useFormDirty();
+  const formId = project ? `project-edit-${project.id}` : "project-new";
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -73,14 +77,32 @@ export function ProjectForm({
       return;
     }
     const data = await res.json();
+    resetDirty();
     router.push(`/projects/${data.id}`);
     router.refresh();
   }
 
   return (
     <Card>
-      <CardContent className="pt-6">
-        <form onSubmit={handleSubmit} className="grid gap-4 max-w-2xl">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
+        <CardTitle className="text-base">
+          {project ? "Edit project" : "New project"}
+        </CardTitle>
+        <FormSaveActions
+          formId={formId}
+          loading={loading}
+          message={error ? "Failed to save" : undefined}
+          dirty={dirty}
+          className="ml-auto"
+        />
+      </CardHeader>
+      <CardContent>
+        <form
+          id={formId}
+          onSubmit={handleSubmit}
+          className="grid gap-4 max-w-2xl"
+          {...formTrackProps}
+        >
           <div>
             <Label htmlFor="projectNumber">Project Number *</Label>
             <Input
@@ -139,11 +161,11 @@ export function ProjectForm({
               defaultValue={project?.lifecycleStage ?? "planning"}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
             >
-              <option value="planning">Planning</option>
-              <option value="pre_contract">Pre-Contract</option>
-              <option value="contract">Contract</option>
-              <option value="ongoing">Ongoing</option>
-              <option value="closed">Closed</option>
+              <option value="planning">{STAGE_STATUS_LABELS.planning}</option>
+              <option value="pre_contract">{STAGE_STATUS_LABELS.pre_contract}</option>
+              <option value="contract">{STAGE_STATUS_LABELS.contract}</option>
+              <option value="ongoing">{STAGE_STATUS_LABELS.ongoing}</option>
+              <option value="closed">{STAGE_STATUS_LABELS.closed}</option>
             </select>
           </div>
           <div>
@@ -241,10 +263,12 @@ export function ProjectForm({
             </Label>
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
-          <div className="flex gap-3">
-            <Button type="submit" disabled={loading}>
-              {loading ? "Saving..." : project ? "Update Project" : "Create Project"}
-            </Button>
+          <div className="flex flex-wrap gap-3">
+            <FormSaveActions
+              loading={loading}
+              message={error ? "Failed to save" : undefined}
+              dirty={dirty}
+            />
             <Button type="button" variant="secondary" onClick={() => router.back()}>
               Cancel
             </Button>

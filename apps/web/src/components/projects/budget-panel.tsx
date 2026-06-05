@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormSaveActions, useFormDirty } from "@/components/ui/form-save-actions";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import {
   DesktopDataTable,
@@ -49,14 +50,22 @@ export function BudgetPanel({
   canEdit: boolean;
 }) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [lineLoading, setLineLoading] = useState(false);
+  const [summaryMessage, setSummaryMessage] = useState("");
+  const [lineMessage, setLineMessage] = useState("");
   const [lineType, setLineType] = useState<"warrant" | "payment">("warrant");
+  const summaryDirty = useFormDirty();
+  const lineDirty = useFormDirty();
+  const summaryFormId = `budget-summary-${projectId}`;
+  const lineFormId = `budget-line-${projectId}`;
 
   async function saveAllocation(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
+    setSummaryLoading(true);
+    setSummaryMessage("");
     const form = new FormData(e.currentTarget);
-    await fetch(`/api/projects/${projectId}/budget`, {
+    const res = await fetch(`/api/projects/${projectId}/budget`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -66,15 +75,22 @@ export function BudgetPanel({
         financialYearId,
       }),
     });
-    setLoading(false);
-    router.refresh();
+    setSummaryLoading(false);
+    if (res.ok) {
+      setSummaryMessage("Saved");
+      summaryDirty.resetDirty();
+      router.refresh();
+    } else {
+      setSummaryMessage("Failed to save");
+    }
   }
 
   async function addLine(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
+    setLineLoading(true);
+    setLineMessage("");
     const form = new FormData(e.currentTarget);
-    await fetch(`/api/projects/${projectId}/budget/lines`, {
+    const res = await fetch(`/api/projects/${projectId}/budget/lines`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -92,9 +108,15 @@ export function BudgetPanel({
         voucherRef: form.get("voucherRef"),
       }),
     });
-    setLoading(false);
-    router.refresh();
-    (e.target as HTMLFormElement).reset();
+    setLineLoading(false);
+    if (res.ok) {
+      setLineMessage("Saved");
+      lineDirty.resetDirty();
+      router.refresh();
+      (e.target as HTMLFormElement).reset();
+    } else {
+      setLineMessage("Failed to save");
+    }
   }
 
   return (
@@ -129,11 +151,22 @@ export function BudgetPanel({
       {canEdit && financialYearId && (
         <>
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
               <CardTitle>FY Budget Summary</CardTitle>
+              <FormSaveActions
+                formId={summaryFormId}
+                loading={summaryLoading}
+                message={summaryMessage}
+                dirty={summaryDirty.dirty}
+              />
             </CardHeader>
             <CardContent>
-              <form onSubmit={saveAllocation} className="grid gap-4 sm:grid-cols-3">
+              <form
+                id={summaryFormId}
+                onSubmit={saveAllocation}
+                className="grid gap-4 sm:grid-cols-3"
+                {...summaryDirty.formTrackProps}
+              >
                 <div>
                   <Label>Allocation</Label>
                   <Input name="allocation" type="number" defaultValue={allocation} />
@@ -146,16 +179,26 @@ export function BudgetPanel({
                   <Label>Encumbrance Balance</Label>
                   <Input name="encumbranceBalance" type="number" defaultValue={encumbranceBalance} />
                 </div>
-                <Button type="submit" disabled={loading} size="sm">
-                  Update Summary
-                </Button>
+                <div className="sm:col-span-full">
+                  <FormSaveActions
+                    loading={summaryLoading}
+                    message={summaryMessage}
+                    dirty={summaryDirty.dirty}
+                  />
+                </div>
               </form>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
               <CardTitle>Add Budget Line</CardTitle>
+              <FormSaveActions
+                formId={lineFormId}
+                loading={lineLoading}
+                message={lineMessage}
+                dirty={lineDirty.dirty}
+              />
             </CardHeader>
             <CardContent>
               <div className="mb-4 flex gap-2">
@@ -176,7 +219,12 @@ export function BudgetPanel({
                   Payment
                 </Button>
               </div>
-              <form onSubmit={addLine} className="grid gap-4 sm:grid-cols-2">
+              <form
+                id={lineFormId}
+                onSubmit={addLine}
+                className="grid gap-4 sm:grid-cols-2"
+                {...lineDirty.formTrackProps}
+              >
                 <div>
                   <Label>Date</Label>
                   <Input name="date" type="date" />
@@ -207,9 +255,13 @@ export function BudgetPanel({
                     <Input name="voucherRef" />
                   </div>
                 )}
-                <Button type="submit" disabled={loading} size="sm">
-                  Add {lineType}
-                </Button>
+                <div className="sm:col-span-full">
+                  <FormSaveActions
+                    loading={lineLoading}
+                    message={lineMessage}
+                    dirty={lineDirty.dirty}
+                  />
+                </div>
               </form>
             </CardContent>
           </Card>

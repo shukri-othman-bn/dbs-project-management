@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormSaveActions, useFormDirty } from "@/components/ui/form-save-actions";
 import { cn } from "@/lib/utils";
 
 export type FieldConfig = {
@@ -69,6 +69,7 @@ export function ProjectTabForm({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const { dirty, resetDirty, formTrackProps } = useFormDirty();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -88,6 +89,7 @@ export function ProjectTabForm({
     setLoading(false);
     if (res.ok) {
       setMessage("Saved");
+      resetDirty();
       router.refresh();
     } else {
       setMessage("Failed to save");
@@ -95,33 +97,37 @@ export function ProjectTabForm({
   }
 
   const colClass = columns === 2 ? "sm:grid-cols-2" : "sm:grid-cols-3";
+  const formId = `project-tab-${tab}`;
 
   return (
     <Card>
-      {title && (
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">{title}</CardTitle>
+      {(title || canEdit) && (
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 pb-2">
+          {title ? <CardTitle className="text-base">{title}</CardTitle> : <span />}
+          {canEdit && (
+            <FormSaveActions
+              formId={formId}
+              loading={loading}
+              message={message}
+              dirty={dirty}
+              className="ml-auto"
+            />
+          )}
         </CardHeader>
       )}
-      <CardContent className={cn(!title && "pt-6")}>
-        <form onSubmit={handleSubmit} className={`grid gap-4 ${colClass}`}>
+      <CardContent className={cn(!title && !canEdit && "pt-6", title && !canEdit && "pt-0")}>
+        <form
+          id={formId}
+          onSubmit={handleSubmit}
+          className={`grid gap-4 ${colClass}`}
+          {...(canEdit ? formTrackProps : {})}
+        >
           {fields.map((f) => (
             <Field key={f.name} {...f} defaultValue={defaultValues[f.name]} />
           ))}
           {canEdit && (
-            <div className="flex items-center gap-3 pt-2 sm:col-span-full">
-              <Button type="submit" disabled={loading} size="sm">
-                {loading ? "Saving..." : "Save changes"}
-              </Button>
-              {message && (
-                <span
-                  className={
-                    message === "Saved" ? "text-sm text-emerald-700" : "text-sm text-red-600"
-                  }
-                >
-                  {message}
-                </span>
-              )}
+            <div className="sm:col-span-full">
+              <FormSaveActions loading={loading} message={message} dirty={dirty} />
             </div>
           )}
         </form>

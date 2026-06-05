@@ -11,7 +11,7 @@ export function MasterListHeader({
     view === "by-status"
       ? "By status — lifecycle and monitoring views"
       : view === "contract-matters"
-        ? "Contract matters — projects, payments, warrants, and related records"
+        ? "Contract matters — projects, payments, and related records"
         : "Payment matters — certification, dispatch, and payment processing";
 
   return (

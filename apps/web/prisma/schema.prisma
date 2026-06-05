@@ -50,23 +50,38 @@ model User {
 }
 
 model Section {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  code      String?   @unique
+  id        String          @id @default(cuid())
+  name      String          @unique
+  code      String?         @unique
   unitLabel String?
   users     User[]
   projects  Project[]
-  createdAt DateTime  @default(now())
+  budgets   SectionBudget[]
+  createdAt DateTime        @default(now())
+}
+
+model SectionBudget {
+  id              String        @id @default(cuid())
+  sectionId       String
+  section         Section       @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  financialYearId String
+  financialYear   FinancialYear @relation(fields: [financialYearId], references: [id])
+  allocation      Float         @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([sectionId, financialYearId])
 }
 
 model FinancialYear {
-  id        String          @id @default(cuid())
-  label     String          @unique
-  startDate DateTime
-  endDate   DateTime
-  isCurrent Boolean         @default(false)
-  budgets   ProjectBudget[]
-  createdAt DateTime        @default(now())
+  id             String          @id @default(cuid())
+  label          String          @unique
+  startDate      DateTime
+  endDate        DateTime
+  isCurrent      Boolean         @default(false)
+  budgets        ProjectBudget[]
+  sectionBudgets SectionBudget[]
+  createdAt      DateTime        @default(now())
 }
 
 model FundingType {
@@ -117,6 +132,8 @@ model Project {
   statusUpdates         StatusUpdate[]
   budgets               ProjectBudget[]
   budgetLines           BudgetLine[]
+  variationOrders       VariationOrder[]
+  extensionOfTimes      ExtensionOfTime[]
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
 }
@@ -255,10 +272,35 @@ model BudgetLine {
   financialYearId String?
   type            BudgetLineType
   date            DateTime?
+  claimDate       DateTime?
   description     String?
   amountApproved  Float          @default(0)
   amountCertified Float?
   amountBalance   Float?
   voucherRef      String?
   createdAt       DateTime       @default(now())
+}
+
+model VariationOrder {
+  id            String    @id @default(cuid())
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  voNo          String?
+  amount        Float     @default(0)
+  submittedDate DateTime?
+  approvedDate  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model ExtensionOfTime {
+  id            String    @id @default(cuid())
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  eotNo         String?
+  eotPeriod     String?
+  submittedDate DateTime?
+  approvedDate  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }

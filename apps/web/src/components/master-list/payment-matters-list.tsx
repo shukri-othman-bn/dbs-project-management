@@ -209,12 +209,7 @@ export function PaymentMattersList({ rows }: { rows: PaymentMatterRow[] }) {
       </div>
 
       <div className="px-6 pt-3">
-        <ListTabBar
-          tabs={PAYMENT_MATTER_TABS}
-          activeId={tab}
-          onSelect={setTab}
-          columns={4}
-        />
+        <ListTabBar tabs={PAYMENT_MATTER_TABS} activeId={tab} onSelect={setTab} />
       </div>
 
       <CardContent className="space-y-4 border-b border-slate-100 py-4">

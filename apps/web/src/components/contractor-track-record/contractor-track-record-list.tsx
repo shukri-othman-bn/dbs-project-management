@@ -154,12 +154,7 @@ export function ContractorTrackRecordList({ rows }: { rows: ContractorTrackRecor
   return (
     <Card>
       <div className="px-6 pt-4">
-        <ListTabBar
-          tabs={TRACK_RECORD_VIEW_TABS}
-          activeId={tab}
-          onSelect={setTab}
-          columns={4}
-        />
+        <ListTabBar tabs={TRACK_RECORD_VIEW_TABS} activeId={tab} onSelect={setTab} />
       </div>
 
       <CardContent className="space-y-4 border-b border-slate-100 py-4">

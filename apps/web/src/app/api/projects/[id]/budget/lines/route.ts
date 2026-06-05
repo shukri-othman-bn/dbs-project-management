@@ -29,6 +29,7 @@ export async function POST(
       financialYearId: body.financialYearId || null,
       type: body.type as BudgetLineType,
       date: body.date ? new Date(body.date) : null,
+      claimDate: body.claimDate ? new Date(body.claimDate) : null,
       description: body.description || null,
       amountApproved: body.amountApproved ?? 0,
       amountCertified: body.amountCertified ?? null,

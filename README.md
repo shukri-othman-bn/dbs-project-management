@@ -27,8 +27,9 @@ Open [http://localhost:3000](http://localhost:3000)
 |------|-------|
 | Director | director@dbs.gov.bn |
 | Admin | admin@dbs.gov.bn |
-| Head of Section | hos@dbs.gov.bn |
-| Officer | officer1@dbs.gov.bn |
+| Unit lead (BM1) | officer1@dbs.gov.bn |
+| Unit lead (BM2) | officer2@dbs.gov.bn |
+| … | officer3@ … officer13@ (BM3–BM10, IMU1–IMU3) |
 
 ## Features
 

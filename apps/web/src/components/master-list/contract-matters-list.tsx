@@ -3,7 +3,6 @@
 import { useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MoreHorizontal } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { StageBadge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
@@ -14,10 +13,14 @@ import {
   DEFAULT_CONTRACT_MATTER_TAB,
   filterContractMatterLines,
   filterContractMatterProjects,
+  filterVariationOrderRows,
+  filterEotRows,
   collectContractMatterFilterOptions,
   getContractMatterTabLabel,
   type ContractMatterLineRow,
   type ContractMatterProjectRow,
+  type ContractMatterVariationOrderRow,
+  type ContractMatterEotRow,
   type ContractMatterTabId,
 } from "@/lib/contract-matters-filters";
 import { countActiveMasterListFilters, type MasterListFilterState } from "@/lib/master-list-filters";
@@ -61,6 +64,76 @@ function formatDate(value: string | null) {
   });
 }
 
+function RefNumbersCell({
+  tenderNo,
+  quotationNo,
+  contractNo,
+}: {
+  tenderNo: string | null;
+  quotationNo: string | null;
+  contractNo: string | null;
+}) {
+  const items = [
+    tenderNo ? { label: "Tender", value: tenderNo } : null,
+    quotationNo ? { label: "Quotation", value: quotationNo } : null,
+    contractNo ? { label: "Contract", value: contractNo } : null,
+  ].filter((item): item is { label: string; value: string } => item != null);
+
+  if (items.length === 0) return <span className="text-slate-400">—</span>;
+
+  return (
+    <div className="space-y-0.5 text-slate-700">
+      {items.map(({ label, value }) => (
+        <div key={label}>
+          <span className="text-slate-500">{label}: </span>
+          {value}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function QuotationContractCell({
+  quotationNo,
+  contractNo,
+}: {
+  quotationNo: string | null;
+  contractNo: string | null;
+}) {
+  return (
+    <RefNumbersCell tenderNo={null} quotationNo={quotationNo} contractNo={contractNo} />
+  );
+}
+
+const masterListUnitThClass = cn(desktopThClass, "w-[5%]");
+const masterListUnitTdClass = cn(desktopTdClass, "w-[5%] whitespace-nowrap");
+const masterListProjectThClass = cn(desktopThClass, "w-[25%]");
+const masterListProjectTdClass = cn(desktopTdClass, "w-[25%]");
+const masterListRefsThClass = cn(desktopThClass, "w-[18%]");
+const masterListRefsTdClass = cn(desktopTdClass, "w-[18%]");
+const masterListContractorThClass = cn(desktopThClass, "w-[15%]");
+const masterListContractorTdClass = cn(desktopTdClass, "w-[15%]");
+const matterRecordUnitThClass = cn(desktopThClass, "w-[5%]");
+const matterRecordUnitTdClass = cn(desktopTdClass, "w-[5%] whitespace-nowrap");
+const matterRecordProjectThClass = cn(desktopThClass, "w-[20%]");
+const matterRecordProjectTdClass = cn(desktopTdClass, "w-[20%]");
+const matterRecordRefsThClass = cn(desktopThClass, "w-[15%]");
+const matterRecordRefsTdClass = cn(desktopTdClass, "w-[15%]");
+const matterRecordContractorThClass = cn(desktopThClass, "w-[15%]");
+const matterRecordContractorTdClass = cn(desktopTdClass, "w-[15%]");
+const matterRecordEvenThClass = cn(desktopThClass, "w-[9%]");
+const matterRecordEvenTdClass = cn(desktopTdClass, "w-[9%]");
+const eotUnitThClass = cn(desktopThClass, "w-[5%]");
+const eotUnitTdClass = cn(desktopTdClass, "w-[5%] whitespace-nowrap");
+const eotProjectThClass = cn(desktopThClass, "w-[15%]");
+const eotProjectTdClass = cn(desktopTdClass, "w-[15%]");
+const eotRefsThClass = cn(desktopThClass, "w-[12%]");
+const eotRefsTdClass = cn(desktopTdClass, "w-[12%]");
+const eotContractorThClass = cn(desktopThClass, "w-[12%]");
+const eotContractorTdClass = cn(desktopTdClass, "w-[12%]");
+const eotTrailingThClass = cn(desktopThClass, "w-[7%]");
+const eotTrailingTdClass = cn(desktopTdClass, "w-[7%]");
+
 function parseTab(param: string | null): ContractMatterTabId {
   if (param && CONTRACT_MATTER_TAB_IDS.has(param as ContractMatterTabId)) {
     return param as ContractMatterTabId;
@@ -71,9 +144,13 @@ function parseTab(param: string | null): ContractMatterTabId {
 export function ContractMattersList({
   projects,
   lines,
+  variationOrders,
+  extensionOfTimes,
 }: {
   projects: ContractMatterProjectRow[];
   lines: ContractMatterLineRow[];
+  variationOrders: ContractMatterVariationOrderRow[];
+  extensionOfTimes: ContractMatterEotRow[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -114,18 +191,20 @@ export function ContractMattersList({
     () => lines.filter((l) => l.lineType === "payment"),
     [lines]
   );
-  const warrantLines = useMemo(
-    () => lines.filter((l) => l.lineType === "warrant"),
-    [lines]
-  );
 
   const filteredPayments = useMemo(
     () => filterContractMatterLines(paymentLines, dropdownFilters),
     [paymentLines, filters]
   );
-  const filteredWarrants = useMemo(
-    () => filterContractMatterLines(warrantLines, dropdownFilters),
-    [warrantLines, filters]
+
+  const filteredVariationOrders = useMemo(
+    () => filterVariationOrderRows(variationOrders, dropdownFilters),
+    [variationOrders, filters]
+  );
+
+  const filteredExtensionOfTimes = useMemo(
+    () => filterEotRows(extensionOfTimes, dropdownFilters),
+    [extensionOfTimes, filters]
   );
 
   const contractorProjects = useMemo(() => {
@@ -149,18 +228,14 @@ export function ContractMattersList({
   let rowCount = 0;
   if (tab === "project" || tab === "contractor") rowCount = tab === "contractor" ? contractorProjects.length : filteredProjects.length;
   else if (tab === "payment") rowCount = filteredPayments.length;
-  else if (tab === "warrant") rowCount = filteredWarrants.length;
+  else if (tab === "variation-order") rowCount = filteredVariationOrders.length;
+  else if (tab === "extension-of-time") rowCount = filteredExtensionOfTimes.length;
   else if (tab === "budget") rowCount = filteredProjects.length;
 
   return (
     <Card>
       <div className="px-6 pt-4">
-        <ListTabBar
-          tabs={CONTRACT_MATTER_TABS}
-          activeId={tab}
-          onSelect={setTab}
-          columns={6}
-        />
+        <ListTabBar tabs={CONTRACT_MATTER_TABS} activeId={tab} onSelect={setTab} />
       </div>
 
       <CardContent className="space-y-4 border-b border-slate-100 py-4">
@@ -201,14 +276,15 @@ export function ContractMattersList({
           <PlaceholderPanel tab={tab} />
         ) : tab === "payment" ? (
           <PaymentTable rows={filteredPayments} />
-        ) : tab === "warrant" ? (
-          <WarrantTable rows={filteredWarrants} />
+        ) : tab === "variation-order" ? (
+          <VariationOrderTable rows={filteredVariationOrders} />
+        ) : tab === "extension-of-time" ? (
+          <ExtensionOfTimeTable rows={filteredExtensionOfTimes} />
         ) : tab === "budget" ? (
           <BudgetTable rows={filteredProjects} />
         ) : (
           <ProjectTable
             rows={tab === "contractor" ? contractorProjects : filteredProjects}
-            showContractorFirst={tab === "contractor"}
           />
         )}
 
@@ -227,21 +303,26 @@ function PlaceholderPanel({ tab }: { tab: ContractMatterTabId }) {
     <div className="px-6 py-16 text-center">
       <p className="text-sm font-medium text-slate-700">{getContractMatterTabLabel(tab)}</p>
       <p className="mt-2 text-sm text-slate-500">
-        Records for this matter type are not in the system yet. Use the Project, Payment, Warrant, or
+        Records for this matter type are not in the system yet. Use the Project, Payment, or
         Budget tabs for live data.
       </p>
     </div>
   );
 }
 
-function ProjectTable({
-  rows,
-  showContractorFirst,
-}: {
-  rows: ContractMatterProjectRow[];
-  showContractorFirst?: boolean;
-}) {
+function ProjectTable({ rows }: { rows: ContractMatterProjectRow[] }) {
   if (rows.length === 0) return null;
+
+  const unitColClass = masterListUnitThClass;
+  const unitTdClass = masterListUnitTdClass;
+  const titleColClass = masterListProjectThClass;
+  const titleTdClass = masterListProjectTdClass;
+  const refsColClass = masterListRefsThClass;
+  const refsTdClass = masterListRefsTdClass;
+  const contractorColClass = masterListContractorThClass;
+  const contractorTdClass = masterListContractorTdClass;
+  const trailingColClass = cn(desktopThClass, "w-[9%]");
+  const trailingTdClass = cn(desktopTdClass, "w-[9%]");
 
   return (
     <ResponsiveDataView
@@ -250,16 +331,21 @@ function ProjectTable({
           {rows.map((p) => (
             <MobileRecordCard key={p.id} href={`/projects/${p.id}`} title={p.title}>
               <MobileField label="Unit" value={<UnitPill unit={p.unit} />} />
-              {showContractorFirst && (
-                <MobileField label="Contractor" value={<ContractorPill name={p.contractorName} />} />
-              )}
-              <MobileField label="Tender no." value={p.tenderNo ?? "—"} />
-              <MobileField label="Quotation / contract" value={p.quotationOrContractNo ?? "—"} />
-              {!showContractorFirst && (
-                <MobileField label="Contractor" value={<ContractorPill name={p.contractorName} />} />
-              )}
+              <MobileField
+                label="Tender / quotation / contract"
+                value={
+                  <RefNumbersCell
+                    tenderNo={p.tenderNo}
+                    quotationNo={p.quotationNo}
+                    contractNo={p.contractNo}
+                  />
+                }
+                span={3}
+              />
+              <MobileField label="Contractor" value={<ContractorPill name={p.contractorName} />} />
               <MobileField label="Start date" value={formatDate(p.startDate)} />
               <MobileField label="Completion" value={formatDate(p.completionDate)} />
+              <MobileField label="Contract period" value={p.contractPeriod ?? "—"} />
               <MobileField
                 label="Contract sum"
                 value={p.contractSum != null ? formatCurrency(p.contractSum) : "—"}
@@ -273,58 +359,46 @@ function ProjectTable({
     <DesktopDataTable dense>
       <thead>
         <tr className="border-b bg-slate-50 text-left text-slate-500">
-          <th className={desktopThClass}>Unit</th>
-          {showContractorFirst && <th className={desktopThClass}>Contractor</th>}
-          <th className={desktopThClass}>Tender no.</th>
-          <th className={desktopThClass}>Quotation / contract</th>
-          <th className={desktopThClass}>Project title</th>
-          {!showContractorFirst && <th className={desktopThClass}>Contractor</th>}
-          <th className={desktopThClass}>Start date</th>
-          <th className={desktopThClass}>Completion</th>
-          <th className={desktopThClass}>Contract sum</th>
-          <th className={desktopThClass}>Project status</th>
-          <th className={cn(desktopThClass, "w-8")} aria-label="Actions" />
+          <th className={unitColClass}>Unit</th>
+          <th className={titleColClass}>Project title</th>
+          <th className={refsColClass}>Tender / quotation / contract</th>
+          <th className={contractorColClass}>Contractor</th>
+          <th className={trailingColClass}>Start date</th>
+          <th className={trailingColClass}>Completion</th>
+          <th className={trailingColClass}>Contract period</th>
+          <th className={trailingColClass}>Contract sum</th>
+          <th className={trailingColClass}>Project status</th>
         </tr>
       </thead>
       <tbody>
         {rows.map((p) => (
           <tr key={p.id} className="border-b border-slate-100 align-top hover:bg-slate-50">
-            <td className={desktopTdClass}>
+            <td className={unitTdClass}>
               <UnitPill unit={p.unit} />
             </td>
-            {showContractorFirst && (
-              <td className={desktopTdClass}>
-                <ContractorPill name={p.contractorName} />
-              </td>
-            )}
-            <td className={cn(desktopTdClass, "text-slate-700")}>{p.tenderNo ?? "—"}</td>
-            <td className={cn(desktopTdClass, "text-slate-700")}>{p.quotationOrContractNo ?? "—"}</td>
-            <td className={desktopTdClass}>
+            <td className={titleTdClass}>
               <Link href={`/projects/${p.id}`} className="font-medium text-slate-800 hover:underline">
                 {p.title}
               </Link>
             </td>
-            {!showContractorFirst && (
-              <td className={desktopTdClass}>
-                <ContractorPill name={p.contractorName} />
-              </td>
-            )}
-            <td className={cn(desktopTdClass, "text-slate-600")}>{formatDate(p.startDate)}</td>
-            <td className={cn(desktopTdClass, "text-slate-600")}>{formatDate(p.completionDate)}</td>
-            <td className={cn(desktopTdClass, "text-slate-700")}>
+            <td className={refsTdClass}>
+              <RefNumbersCell
+                tenderNo={p.tenderNo}
+                quotationNo={p.quotationNo}
+                contractNo={p.contractNo}
+              />
+            </td>
+            <td className={contractorTdClass}>
+              <ContractorPill name={p.contractorName} />
+            </td>
+            <td className={cn(trailingTdClass, "text-slate-600")}>{formatDate(p.startDate)}</td>
+            <td className={cn(trailingTdClass, "text-slate-600")}>{formatDate(p.completionDate)}</td>
+            <td className={cn(trailingTdClass, "text-slate-700")}>{p.contractPeriod ?? "—"}</td>
+            <td className={cn(trailingTdClass, "text-slate-700")}>
               {p.contractSum != null ? formatCurrency(p.contractSum) : "—"}
             </td>
-            <td className={desktopTdClass}>
+            <td className={trailingTdClass}>
               <StageBadge stage={p.lifecycleStage} />
-            </td>
-            <td className={cn(desktopTdClass, "w-8 text-slate-400")}>
-              <Link
-                href={`/projects/${p.id}`}
-                className="inline-flex rounded p-1 hover:bg-slate-100 hover:text-slate-600"
-                title="Open project"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Link>
             </td>
           </tr>
         ))}
@@ -344,14 +418,21 @@ function PaymentTable({ rows }: { rows: ContractMatterLineRow[] }) {
           {rows.map((r) => (
             <MobileRecordCard key={r.lineId} href={`/projects/${r.projectId}`} title={r.title}>
               <MobileField label="Unit" value={<UnitPill unit={r.unit} />} />
-              <MobileField label="Date" value={formatDate(r.date)} />
-              <MobileField label="Description" value={r.description ?? "—"} span={3} />
-              <MobileField label="Approved" value={formatCurrency(r.amountApproved)} />
               <MobileField
-                label="Certified"
+                label="Quotation / contract no."
+                value={
+                  <QuotationContractCell quotationNo={r.quotationNo} contractNo={r.contractNo} />
+                }
+                span={3}
+              />
+              <MobileField label="Contractor" value={<ContractorPill name={r.contractorName} />} />
+              <MobileField label="Description" value={r.description ?? "—"} span={3} />
+              <MobileField label="Date claim" value={formatDate(r.claimDate)} />
+              <MobileField label="Date certified" value={formatDate(r.date)} />
+              <MobileField
+                label="Amount certified"
                 value={r.amountCertified != null ? formatCurrency(r.amountCertified) : "—"}
               />
-              <MobileField label="Voucher" value={r.voucherRef ?? "—"} />
             </MobileRecordCard>
           ))}
         </MobileCardList>
@@ -360,33 +441,39 @@ function PaymentTable({ rows }: { rows: ContractMatterLineRow[] }) {
     <DesktopDataTable dense>
       <thead>
         <tr className="border-b bg-slate-50 text-left text-slate-500">
-          <th className={desktopThClass}>Unit</th>
-          <th className={desktopThClass}>Project</th>
-          <th className={desktopThClass}>Date</th>
+          <th className={masterListUnitThClass}>Unit</th>
+          <th className={masterListProjectThClass}>Project</th>
+          <th className={masterListRefsThClass}>Quotation / contract no.</th>
+          <th className={masterListContractorThClass}>Contractor</th>
           <th className={desktopThClass}>Description</th>
-          <th className={desktopThClass}>Approved</th>
-          <th className={desktopThClass}>Certified</th>
-          <th className={desktopThClass}>Voucher</th>
+          <th className={desktopThClass}>Date Claim</th>
+          <th className={desktopThClass}>Date Certified</th>
+          <th className={desktopThClass}>Amount Certified</th>
         </tr>
       </thead>
       <tbody>
         {rows.map((r) => (
           <tr key={r.lineId} className="border-b border-slate-100 hover:bg-slate-50">
-            <td className={desktopTdClass}>
+            <td className={masterListUnitTdClass}>
               <UnitPill unit={r.unit} />
             </td>
-            <td className={desktopTdClass}>
+            <td className={masterListProjectTdClass}>
               <Link href={`/projects/${r.projectId}`} className="font-medium text-slate-800 hover:underline">
                 {r.title}
               </Link>
             </td>
-            <td className={cn(desktopTdClass, "text-slate-600")}>{formatDate(r.date)}</td>
+            <td className={masterListRefsTdClass}>
+              <QuotationContractCell quotationNo={r.quotationNo} contractNo={r.contractNo} />
+            </td>
+            <td className={masterListContractorTdClass}>
+              <ContractorPill name={r.contractorName} />
+            </td>
             <td className={cn(desktopTdClass, "text-slate-600")}>{r.description ?? "—"}</td>
-            <td className={desktopTdClass}>{formatCurrency(r.amountApproved)}</td>
+            <td className={cn(desktopTdClass, "text-slate-600")}>{formatDate(r.claimDate)}</td>
+            <td className={cn(desktopTdClass, "text-slate-600")}>{formatDate(r.date)}</td>
             <td className={desktopTdClass}>
               {r.amountCertified != null ? formatCurrency(r.amountCertified) : "—"}
             </td>
-            <td className={cn(desktopTdClass, "text-slate-600")}>{r.voucherRef ?? "—"}</td>
           </tr>
         ))}
       </tbody>
@@ -396,59 +483,192 @@ function PaymentTable({ rows }: { rows: ContractMatterLineRow[] }) {
   );
 }
 
-function WarrantTable({ rows }: { rows: ContractMatterLineRow[] }) {
+function VariationOrderTable({ rows }: { rows: ContractMatterVariationOrderRow[] }) {
   if (rows.length === 0) return null;
+
   return (
     <ResponsiveDataView
       mobile={
         <MobileCardList>
           {rows.map((r) => (
-            <MobileRecordCard key={r.lineId} href={`/projects/${r.projectId}`} title={r.title}>
+            <MobileRecordCard key={r.id} href={`/projects/${r.projectId}`} title={r.title}>
               <MobileField label="Unit" value={<UnitPill unit={r.unit} />} />
-              <MobileField label="Date" value={formatDate(r.date)} />
-              <MobileField label="Description" value={r.description ?? "—"} span={3} />
-              <MobileField label="Approved" value={formatCurrency(r.amountApproved)} />
               <MobileField
-                label="Balance"
-                value={r.amountBalance != null ? formatCurrency(r.amountBalance) : "—"}
+                label="Quotation / contract no."
+                value={
+                  <QuotationContractCell quotationNo={r.quotationNo} contractNo={r.contractNo} />
+                }
+                span={3}
               />
+              <MobileField label="Contractor" value={<ContractorPill name={r.contractorName} />} />
+              <MobileField
+                label="Quotation / contract amount"
+                value={
+                  r.quotationContractAmount != null
+                    ? formatCurrency(r.quotationContractAmount)
+                    : "—"
+                }
+              />
+              <MobileField label="Variation order no." value={r.voNo ?? "—"} />
+              <MobileField label="Variation order amount" value={formatCurrency(r.voAmount)} />
+              <MobileField label="Variation order submitted" value={formatDate(r.submittedDate)} />
+              <MobileField label="Variation order approved" value={formatDate(r.approvedDate)} />
             </MobileRecordCard>
           ))}
         </MobileCardList>
       }
       desktop={
-    <DesktopDataTable dense>
-      <thead>
-        <tr className="border-b bg-slate-50 text-left text-slate-500">
-          <th className={desktopThClass}>Unit</th>
-          <th className={desktopThClass}>Project</th>
-          <th className={desktopThClass}>Date</th>
-          <th className={desktopThClass}>Description</th>
-          <th className={desktopThClass}>Approved</th>
-          <th className={desktopThClass}>Balance</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => (
-          <tr key={r.lineId} className="border-b border-slate-100 hover:bg-slate-50">
-            <td className={desktopTdClass}>
-              <UnitPill unit={r.unit} />
-            </td>
-            <td className={desktopTdClass}>
-              <Link href={`/projects/${r.projectId}`} className="font-medium text-slate-800 hover:underline">
-                {r.title}
-              </Link>
-            </td>
-            <td className={cn(desktopTdClass, "text-slate-600")}>{formatDate(r.date)}</td>
-            <td className={cn(desktopTdClass, "text-slate-600")}>{r.description ?? "—"}</td>
-            <td className={desktopTdClass}>{formatCurrency(r.amountApproved)}</td>
-            <td className={desktopTdClass}>
-              {r.amountBalance != null ? formatCurrency(r.amountBalance) : "—"}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </DesktopDataTable>
+        <DesktopDataTable dense>
+          <thead>
+            <tr className="border-b bg-slate-50 text-left text-slate-500">
+              <th className={matterRecordUnitThClass}>Unit</th>
+              <th className={matterRecordProjectThClass}>Project</th>
+              <th className={matterRecordRefsThClass}>Quotation / contract no.</th>
+              <th className={matterRecordContractorThClass}>Contractor</th>
+              <th className={matterRecordEvenThClass}>Quotation / contract amount</th>
+              <th className={matterRecordEvenThClass}>Variation order no.</th>
+              <th className={matterRecordEvenThClass}>Variation order amount</th>
+              <th className={matterRecordEvenThClass}>Variation order submitted</th>
+              <th className={matterRecordEvenThClass}>Variation order approved</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id} className="border-b border-slate-100 align-top hover:bg-slate-50">
+                <td className={matterRecordUnitTdClass}>
+                  <UnitPill unit={r.unit} />
+                </td>
+                <td className={matterRecordProjectTdClass}>
+                  <Link
+                    href={`/projects/${r.projectId}`}
+                    className="font-medium text-slate-800 hover:underline"
+                  >
+                    {r.title}
+                  </Link>
+                </td>
+                <td className={matterRecordRefsTdClass}>
+                  <QuotationContractCell quotationNo={r.quotationNo} contractNo={r.contractNo} />
+                </td>
+                <td className={matterRecordContractorTdClass}>
+                  <ContractorPill name={r.contractorName} />
+                </td>
+                <td className={cn(matterRecordEvenTdClass, "text-slate-700")}>
+                  {r.quotationContractAmount != null
+                    ? formatCurrency(r.quotationContractAmount)
+                    : "—"}
+                </td>
+                <td className={cn(matterRecordEvenTdClass, "text-slate-700")}>{r.voNo ?? "—"}</td>
+                <td className={matterRecordEvenTdClass}>{formatCurrency(r.voAmount)}</td>
+                <td className={cn(matterRecordEvenTdClass, "text-slate-600")}>
+                  {formatDate(r.submittedDate)}
+                </td>
+                <td className={cn(matterRecordEvenTdClass, "text-slate-600")}>
+                  {formatDate(r.approvedDate)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </DesktopDataTable>
+      }
+    />
+  );
+}
+
+function ExtensionOfTimeTable({ rows }: { rows: ContractMatterEotRow[] }) {
+  if (rows.length === 0) return null;
+
+  return (
+    <ResponsiveDataView
+      mobile={
+        <MobileCardList>
+          {rows.map((r) => (
+            <MobileRecordCard key={r.id} href={`/projects/${r.projectId}`} title={r.title}>
+              <MobileField label="Unit" value={<UnitPill unit={r.unit} />} />
+              <MobileField
+                label="Quotation / contract no."
+                value={
+                  <QuotationContractCell quotationNo={r.quotationNo} contractNo={r.contractNo} />
+                }
+                span={3}
+              />
+              <MobileField label="Contractor" value={<ContractorPill name={r.contractorName} />} />
+              <MobileField label="Contract period" value={r.contractPeriod ?? "—"} />
+              <MobileField label="EOT no." value={r.eotNo ?? "—"} />
+              <MobileField label="EOT period" value={r.eotPeriod ?? "—"} />
+              <MobileField label="Start date" value={formatDate(r.startDate)} />
+              <MobileField label="Completion" value={formatDate(r.completionDate)} />
+              <MobileField
+                label="Revised completion"
+                value={formatDate(r.revisedCompletionDate)}
+              />
+              <MobileField label="EOT submitted" value={formatDate(r.submittedDate)} />
+              <MobileField label="EOT approved" value={formatDate(r.approvedDate)} />
+            </MobileRecordCard>
+          ))}
+        </MobileCardList>
+      }
+      desktop={
+        <DesktopDataTable dense>
+          <thead>
+            <tr className="border-b bg-slate-50 text-left text-slate-500">
+              <th className={eotUnitThClass}>Unit</th>
+              <th className={eotProjectThClass}>Project</th>
+              <th className={eotRefsThClass}>Quotation / contract no.</th>
+              <th className={eotContractorThClass}>Contractor</th>
+              <th className={eotTrailingThClass}>Contract period</th>
+              <th className={eotTrailingThClass}>EOT no.</th>
+              <th className={eotTrailingThClass}>EOT period</th>
+              <th className={eotTrailingThClass}>Start date</th>
+              <th className={eotTrailingThClass}>Completion</th>
+              <th className={eotTrailingThClass}>Revised completion</th>
+              <th className={eotTrailingThClass}>EOT submitted</th>
+              <th className={eotTrailingThClass}>EOT approved</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id} className="border-b border-slate-100 align-top hover:bg-slate-50">
+                <td className={eotUnitTdClass}>
+                  <UnitPill unit={r.unit} />
+                </td>
+                <td className={eotProjectTdClass}>
+                  <Link
+                    href={`/projects/${r.projectId}`}
+                    className="font-medium text-slate-800 hover:underline"
+                  >
+                    {r.title}
+                  </Link>
+                </td>
+                <td className={eotRefsTdClass}>
+                  <QuotationContractCell quotationNo={r.quotationNo} contractNo={r.contractNo} />
+                </td>
+                <td className={eotContractorTdClass}>
+                  <ContractorPill name={r.contractorName} />
+                </td>
+                <td className={cn(eotTrailingTdClass, "text-slate-700")}>
+                  {r.contractPeriod ?? "—"}
+                </td>
+                <td className={cn(eotTrailingTdClass, "text-slate-700")}>{r.eotNo ?? "—"}</td>
+                <td className={cn(eotTrailingTdClass, "text-slate-700")}>{r.eotPeriod ?? "—"}</td>
+                <td className={cn(eotTrailingTdClass, "text-slate-600")}>
+                  {formatDate(r.startDate)}
+                </td>
+                <td className={cn(eotTrailingTdClass, "text-slate-600")}>
+                  {formatDate(r.completionDate)}
+                </td>
+                <td className={cn(eotTrailingTdClass, "text-slate-600")}>
+                  {formatDate(r.revisedCompletionDate)}
+                </td>
+                <td className={cn(eotTrailingTdClass, "text-slate-600")}>
+                  {formatDate(r.submittedDate)}
+                </td>
+                <td className={cn(eotTrailingTdClass, "text-slate-600")}>
+                  {formatDate(r.approvedDate)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </DesktopDataTable>
       }
     />
   );

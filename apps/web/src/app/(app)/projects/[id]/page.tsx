@@ -7,6 +7,7 @@ import {
   DEFAULT_PROJECT_TAB,
   type ProjectTabId,
 } from "@/lib/project-labels";
+import { getUnitLabel } from "@/lib/units";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -51,9 +52,7 @@ export default async function ProjectDetailPage({
     fyEnd: fy?.endDate,
   });
 
-  const unit =
-    project.section?.unitLabel ??
-    (project.section?.code ? `DBS - ${project.section.code}` : project.section?.name);
+  const unit = getUnitLabel(project.section);
 
   return (
     <div className="space-y-6">

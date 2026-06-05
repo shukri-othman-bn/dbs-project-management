@@ -8,12 +8,9 @@ export const CONTRACT_MATTER_TABS = [
   { id: "variation-order", label: "Variation Order" },
   { id: "extension-of-time", label: "Extension of time" },
   { id: "job-order", label: "Job Order" },
-  { id: "other", label: "Other" },
   { id: "budget", label: "Budget" },
-  { id: "warrant", label: "Warrant" },
   { id: "purchase-order", label: "Purchase Order" },
   { id: "request", label: "Request" },
-  { id: "share-document", label: "Share Document" },
   { id: "contractor", label: "Contractor" },
 ] as const;
 
@@ -27,24 +24,22 @@ export const DEFAULT_CONTRACT_MATTER_TAB: ContractMatterTabId = "project";
 
 /** Tabs that will show data once dedicated records exist in the system. */
 export const CONTRACT_MATTER_PLACEHOLDER_TABS = new Set<ContractMatterTabId>([
-  "variation-order",
-  "extension-of-time",
   "job-order",
-  "other",
   "purchase-order",
   "request",
-  "share-document",
 ]);
 
 export type ContractMatterProjectRow = {
   id: string;
   unit: string | null;
   tenderNo: string | null;
-  quotationOrContractNo: string | null;
+  quotationNo: string | null;
+  contractNo: string | null;
   title: string;
   contractorName: string | null;
   startDate: string | null;
   completionDate: string | null;
+  contractPeriod: string | null;
   contractSum: number | null;
   lifecycleStage: LifecycleStage;
   projectType: ProjectType | null;
@@ -63,7 +58,8 @@ export type ContractMatterLineRow = {
   lineType: BudgetLineType;
   unit: string | null;
   tenderNo: string | null;
-  quotationOrContractNo: string | null;
+  quotationNo: string | null;
+  contractNo: string | null;
   title: string;
   contractorName: string | null;
   lifecycleStage: LifecycleStage;
@@ -72,11 +68,55 @@ export type ContractMatterLineRow = {
   ministry: string | null;
   department: string | null;
   date: string | null;
+  claimDate: string | null;
   description: string | null;
   amountApproved: number;
   amountCertified: number | null;
   amountBalance: number | null;
   voucherRef: string | null;
+};
+
+export type ContractMatterVariationOrderRow = {
+  id: string;
+  projectId: string;
+  unit: string | null;
+  title: string;
+  quotationNo: string | null;
+  contractNo: string | null;
+  contractorName: string | null;
+  quotationContractAmount: number | null;
+  voNo: string | null;
+  voAmount: number;
+  submittedDate: string | null;
+  approvedDate: string | null;
+  lifecycleStage: LifecycleStage;
+  projectType: ProjectType | null;
+  vote: string | null;
+  ministry: string | null;
+  department: string | null;
+};
+
+export type ContractMatterEotRow = {
+  id: string;
+  projectId: string;
+  unit: string | null;
+  title: string;
+  quotationNo: string | null;
+  contractNo: string | null;
+  contractorName: string | null;
+  contractPeriod: string | null;
+  eotNo: string | null;
+  eotPeriod: string | null;
+  startDate: string | null;
+  completionDate: string | null;
+  revisedCompletionDate: string | null;
+  submittedDate: string | null;
+  approvedDate: string | null;
+  lifecycleStage: LifecycleStage;
+  projectType: ProjectType | null;
+  vote: string | null;
+  ministry: string | null;
+  department: string | null;
 };
 
 export function getContractMatterTabLabel(tab: ContractMatterTabId) {
@@ -88,7 +128,8 @@ export function projectMatchesContractMatterSearch(
     ContractMatterProjectRow,
     | "title"
     | "tenderNo"
-    | "quotationOrContractNo"
+    | "quotationNo"
+    | "contractNo"
     | "contractorName"
     | "unit"
     | "vote"
@@ -103,7 +144,8 @@ export function projectMatchesContractMatterSearch(
   const haystack = [
     p.title,
     p.tenderNo,
-    p.quotationOrContractNo,
+    p.quotationNo,
+    p.contractNo,
     p.contractorName,
     p.unit,
     p.vote,
@@ -200,11 +242,13 @@ export function filterContractMatterLines(
       id: row.projectId,
       unit: row.unit,
       tenderNo: row.tenderNo,
-      quotationOrContractNo: row.quotationOrContractNo,
+      quotationNo: row.quotationNo,
+      contractNo: row.contractNo,
       title: row.title,
       contractorName: row.contractorName,
       startDate: null,
       completionDate: null,
+      contractPeriod: null,
       contractSum: null,
       lifecycleStage: row.lifecycleStage,
       projectType: row.projectType,
@@ -217,6 +261,106 @@ export function filterContractMatterLines(
       paymentsCertified: 0,
     };
     if (!projectMatchesContractMatterSearch(pseudo, filters.search)) return false;
+    if (filters.unit && row.unit !== filters.unit) return false;
+    if (filters.vote && row.vote !== filters.vote) return false;
+    if (filters.contractor && row.contractorName !== filters.contractor) return false;
+    if (filters.projectType && row.projectType !== filters.projectType) return false;
+    if (
+      filters.projectStatus &&
+      STAGE_STATUS_LABELS[row.lifecycleStage] !== filters.projectStatus
+    ) {
+      return false;
+    }
+    if (filters.ministry && row.ministry !== filters.ministry) return false;
+    if (filters.department && row.department !== filters.department) return false;
+    return true;
+  });
+}
+
+export function filterVariationOrderRows(
+  rows: ContractMatterVariationOrderRow[],
+  filters: {
+    search: string;
+    unit: string;
+    vote: string;
+    contractor: string;
+    projectType: string;
+    projectStatus: string;
+    ministry: string;
+    department: string;
+  }
+) {
+  return rows.filter((row) => {
+    const q = filters.search.trim().toLowerCase();
+    if (q) {
+      const haystack = [
+        row.title,
+        row.quotationNo,
+        row.contractNo,
+        row.contractorName,
+        row.unit,
+        row.voNo,
+        row.vote,
+        row.ministry,
+        row.department,
+        row.projectType ? PROJECT_TYPE_LABELS[row.projectType] : null,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    if (filters.unit && row.unit !== filters.unit) return false;
+    if (filters.vote && row.vote !== filters.vote) return false;
+    if (filters.contractor && row.contractorName !== filters.contractor) return false;
+    if (filters.projectType && row.projectType !== filters.projectType) return false;
+    if (
+      filters.projectStatus &&
+      STAGE_STATUS_LABELS[row.lifecycleStage] !== filters.projectStatus
+    ) {
+      return false;
+    }
+    if (filters.ministry && row.ministry !== filters.ministry) return false;
+    if (filters.department && row.department !== filters.department) return false;
+    return true;
+  });
+}
+
+export function filterEotRows(
+  rows: ContractMatterEotRow[],
+  filters: {
+    search: string;
+    unit: string;
+    vote: string;
+    contractor: string;
+    projectType: string;
+    projectStatus: string;
+    ministry: string;
+    department: string;
+  }
+) {
+  return rows.filter((row) => {
+    const q = filters.search.trim().toLowerCase();
+    if (q) {
+      const haystack = [
+        row.title,
+        row.quotationNo,
+        row.contractNo,
+        row.contractorName,
+        row.unit,
+        row.eotNo,
+        row.eotPeriod,
+        row.contractPeriod,
+        row.vote,
+        row.ministry,
+        row.department,
+        row.projectType ? PROJECT_TYPE_LABELS[row.projectType] : null,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
     if (filters.unit && row.unit !== filters.unit) return false;
     if (filters.vote && row.vote !== filters.vote) return false;
     if (filters.contractor && row.contractorName !== filters.contractor) return false;

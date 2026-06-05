@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { getProjectsWithBudget, getCurrentFinancialYear } from "@/lib/data";
+import { getUnitLabel } from "@/lib/units";
 import { Role } from "@prisma/client";
 import { NextResponse } from "next/server";
 
@@ -30,7 +31,7 @@ export async function GET(req: Request) {
     const headers = [
       "Project Number",
       "Title",
-      "Section",
+      "Unit",
       "OIC",
       "Funding",
       "FY",
@@ -45,7 +46,7 @@ export async function GET(req: Request) {
       [
         p.projectNumber,
         p.title,
-        p.section?.name,
+        getUnitLabel(p.section),
         p.oic?.name,
         p.fundingType?.name,
         fy?.label,
@@ -70,7 +71,7 @@ export async function GET(req: Request) {
     "Project Number",
     "Title",
     "Stage",
-    "Section",
+    "Unit",
     "OIC",
     "Client",
     "Physical %",
@@ -85,7 +86,7 @@ export async function GET(req: Request) {
       p.projectNumber,
       p.title,
       p.lifecycleStage,
-      p.section?.name,
+      getUnitLabel(p.section),
       p.oic?.name,
       p.client?.ministry,
       p.latestStatus?.physicalActual,

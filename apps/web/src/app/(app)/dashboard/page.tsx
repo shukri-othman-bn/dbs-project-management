@@ -3,12 +3,19 @@ import { auth } from "@/lib/auth";
 import { getDepartmentBudgetSummary, getProjectsWithBudget } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
-import { formatCurrency, formatPercent } from "@/lib/utils";
+import { formatCurrency, formatDate, formatPercent } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RagBadge, StageBadge } from "@/components/ui/badge";
+import { RagBadge } from "@/components/ui/badge";
 import { STAGE_LABELS } from "@/lib/budget";
+import {
+  computeDashboardMetrics,
+  DASHBOARD_METRIC_DEFINITIONS,
+} from "@/lib/dashboard-metrics";
 import Link from "next/link";
+import { getUnitLabel } from "@/lib/units";
+import { collectUpcomingDates, formatUpcomingDatesPeriod } from "@/lib/upcoming-dates";
 import { SectionBudgetChart } from "@/components/charts/section-budget-chart";
+import { SummaryMetricCard } from "@/components/dashboard/summary-metric-card";
 import {
   DesktopDataTable,
   desktopTdClass,
@@ -24,23 +31,23 @@ export default async function DashboardPage() {
   if (!session?.user) redirect("/login");
   const user = session.user;
   const projects = await getProjectsWithBudget(user);
-  const { totals, bySection } = await getDepartmentBudgetSummary(user);
+  const { totals, byUnit } = await getDepartmentBudgetSummary(user);
+  const { activeCount, needsAttentionCount, needsAttentionProjects } =
+    computeDashboardMetrics(projects);
 
-  const needsAction = projects.filter(
-    (p) => p.latestStatus?.actionsRequired || p.toMonitor
-  );
   const byStage = Object.entries(STAGE_LABELS).map(([key, label]) => ({
     stage: label,
     count: projects.filter((p) => p.lifecycleStage === key).length,
   }));
 
-  const chartData = Object.entries(bySection).map(([section, items]) => ({
-    section: section.replace("Section ", "Sec "),
-    allocation: items.reduce((s, p) => s + p.totals.allocation, 0),
-    spent: items.reduce((s, p) => s + p.totals.paymentsCertified, 0),
+  const chartData = byUnit.map((row) => ({
+    section: row.unit,
+    allocation: row.allocation,
+    spent: row.spent,
   }));
 
   const isDirector = user.role === "DIRECTOR" || user.role === "ADMIN";
+  const upcomingDates = collectUpcomingDates(projects);
 
   return (
     <div className="space-y-8">
@@ -54,44 +61,39 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-slate-500">Active Projects</p>
-            <p className="text-3xl font-bold">
-              {projects.filter((p) => p.lifecycleStage !== "closed").length}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-slate-500">Needs Attention</p>
-            <p className="text-3xl font-bold text-amber-600">{needsAction.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-slate-500">FY Allocation</p>
-            <p className="text-2xl font-bold">{formatCurrency(totals.allocation)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-slate-500">FY Spent (Certified)</p>
-            <p className="text-2xl font-bold">{formatCurrency(totals.spent)}</p>
+        <SummaryMetricCard
+          label="Active Projects"
+          definition={DASHBOARD_METRIC_DEFINITIONS.activeProjects}
+          value={activeCount}
+        />
+        <SummaryMetricCard
+          label="Needs Attention"
+          definition={DASHBOARD_METRIC_DEFINITIONS.needsAttention}
+          value={needsAttentionCount}
+          valueClassName="text-amber-600"
+        />
+        <SummaryMetricCard
+          label="FY Allocation"
+          value={formatCurrency(totals.allocation)}
+        />
+        <SummaryMetricCard
+          label="FY Spent (Certified)"
+          value={formatCurrency(totals.spent)}
+          footer={
             <p className="text-xs text-slate-500">
               {totals.allocation > 0
                 ? formatPercent((totals.spent / totals.allocation) * 100)
                 : "0%"}{" "}
               utilization
             </p>
-          </CardContent>
-        </Card>
+          }
+        />
       </div>
 
       {isDirector && chartData.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Budget by Section</CardTitle>
+            <CardTitle>Budget by Unit</CardTitle>
           </CardHeader>
           <CardContent>
             <SectionBudgetChart data={chartData} />
@@ -118,21 +120,29 @@ export default async function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Requires Action</CardTitle>
+            <CardTitle>Needs Attention</CardTitle>
           </CardHeader>
           <CardContent>
-            {needsAction.length === 0 ? (
-              <p className="text-sm text-slate-500">No flagged projects</p>
+            {needsAttentionProjects.length === 0 ? (
+              <p className="text-sm text-slate-500">No projects behind FY spend pace</p>
             ) : (
               <ul className="space-y-3">
-                {needsAction.slice(0, 5).map((p) => (
-                  <li key={p.id}>
-                    <Link href={`/projects/${p.id}`} className="font-medium text-slate-800 hover:underline">
-                      {p.projectNumber}
-                    </Link>
-                    <p className="text-xs text-slate-500 line-clamp-2">
-                      {p.latestStatus?.actionsRequired || "Marked for monitoring"}
-                    </p>
+                {needsAttentionProjects.slice(0, 5).map((p) => (
+                  <li key={p.id} className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <Link
+                        href={`/projects/${p.id}`}
+                        className="font-medium text-slate-800 hover:underline"
+                      >
+                        {p.projectNumber}
+                      </Link>
+                      <p className="text-xs text-slate-600 line-clamp-2">{p.title}</p>
+                      <p className="text-xs text-slate-500">
+                        {getUnitLabel(p.section) ?? "Unassigned"} ·{" "}
+                        {formatPercent(p.totals.utilizationPct)} spent
+                      </p>
+                    </div>
+                    <RagBadge status={p.totals.rag} />
                   </li>
                 ))}
               </ul>
@@ -143,72 +153,67 @@ export default async function DashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recent Projects</CardTitle>
+          <CardTitle>Upcoming Dates</CardTitle>
+          <p className="text-sm text-slate-500">
+            Open tender, close tender, and completion dates · {formatUpcomingDatesPeriod()}
+          </p>
         </CardHeader>
         <CardContent className="p-0 lg:p-6">
-          <ResponsiveDataView
-            mobile={
-              <MobileCardList>
-                {projects.slice(0, 10).map((p) => (
-                  <MobileRecordCard
-                    key={p.id}
-                    href={`/projects/${p.id}`}
-                    title={p.projectNumber}
-                    subtitle={p.title}
-                  >
-                    <MobileField label="Stage" value={<StageBadge stage={p.lifecycleStage} />} />
-                    <MobileField
-                      label="Physical"
-                      value={formatPercent(p.latestStatus?.physicalActual ?? 0)}
-                    />
-                    <MobileField
-                      label="Budget"
-                      value={`${formatCurrency(p.totals.paymentsCertified)} / ${formatCurrency(p.totals.allocation)}`}
-                    />
-                    <MobileField label="RAG" value={<RagBadge status={p.totals.rag} />} />
-                  </MobileRecordCard>
-                ))}
-              </MobileCardList>
-            }
-            desktop={
-              <DesktopDataTable>
-                <thead>
-                  <tr className="border-b">
-                    <th className={desktopThClass}>Number</th>
-                    <th className={desktopThClass}>Title</th>
-                    <th className={desktopThClass}>Stage</th>
-                    <th className={desktopThClass}>Physical</th>
-                    <th className={desktopThClass}>Budget</th>
-                    <th className={desktopThClass}>RAG</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {projects.slice(0, 10).map((p) => (
-                    <tr key={p.id} className="border-b border-slate-100">
-                      <td className={desktopTdClass}>
-                        <Link href={`/projects/${p.id}`} className="font-medium hover:underline">
-                          {p.projectNumber}
-                        </Link>
-                      </td>
-                      <td className={desktopTdClass}>{p.title}</td>
-                      <td className={desktopTdClass}>
-                        <StageBadge stage={p.lifecycleStage} />
-                      </td>
-                      <td className={desktopTdClass}>
-                        {formatPercent(p.latestStatus?.physicalActual ?? 0)}
-                      </td>
-                      <td className={desktopTdClass}>
-                        {formatCurrency(p.totals.paymentsCertified)} / {formatCurrency(p.totals.allocation)}
-                      </td>
-                      <td className={desktopTdClass}>
-                        <RagBadge status={p.totals.rag} />
-                      </td>
-                    </tr>
+          {upcomingDates.length === 0 ? (
+            <p className="px-6 py-4 text-sm text-slate-500 lg:px-0">
+              No upcoming dates this month or next month
+            </p>
+          ) : (
+            <ResponsiveDataView
+              mobile={
+                <MobileCardList>
+                  {upcomingDates.map((row) => (
+                    <MobileRecordCard
+                      key={`${row.projectId}-${row.type}`}
+                      href={`/projects/${row.projectId}`}
+                      title={row.projectNumber}
+                      subtitle={row.title}
+                    >
+                      <MobileField label="Milestone" value={row.label} />
+                      <MobileField label="Date" value={formatDate(row.date)} />
+                      <MobileField label="Unit" value={row.unit ?? "—"} />
+                    </MobileRecordCard>
                   ))}
-                </tbody>
-              </DesktopDataTable>
-            }
-          />
+                </MobileCardList>
+              }
+              desktop={
+                <DesktopDataTable>
+                  <thead>
+                    <tr className="border-b">
+                      <th className={desktopThClass}>Date</th>
+                      <th className={desktopThClass}>Milestone</th>
+                      <th className={desktopThClass}>Project</th>
+                      <th className={desktopThClass}>Title</th>
+                      <th className={desktopThClass}>Unit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {upcomingDates.map((row) => (
+                      <tr key={`${row.projectId}-${row.type}`} className="border-b border-slate-100">
+                        <td className={desktopTdClass}>{formatDate(row.date)}</td>
+                        <td className={desktopTdClass}>{row.label}</td>
+                        <td className={desktopTdClass}>
+                          <Link
+                            href={`/projects/${row.projectId}`}
+                            className="font-medium hover:underline"
+                          >
+                            {row.projectNumber}
+                          </Link>
+                        </td>
+                        <td className={desktopTdClass}>{row.title}</td>
+                        <td className={desktopTdClass}>{row.unit ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </DesktopDataTable>
+              }
+            />
+          )}
         </CardContent>
       </Card>
     </div>

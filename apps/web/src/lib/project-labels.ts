@@ -9,7 +9,7 @@ export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
 };
 
 export const STAGE_STATUS_LABELS: Record<LifecycleStage, string> = {
-  planning: "Planning",
+  planning: "Feasibility Study",
   pre_contract: "Pre-Contract",
   contract: "Contract",
   ongoing: "Ongoing",

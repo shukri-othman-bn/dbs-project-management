@@ -19,8 +19,14 @@ export default function AppError({
       <h1 className="text-xl font-semibold text-slate-900">Something went wrong</h1>
       <p className="max-w-md text-sm text-slate-600">
         The app could not load this page. This is often caused by the database not being
-        connected or not seeded yet on DigitalOcean.
+        connected, the schema being out of date after a code update, or the database not
+        being seeded yet.
       </p>
+      {process.env.NODE_ENV === "development" && error.message ? (
+        <p className="max-w-md rounded-lg bg-red-50 px-3 py-2 text-left font-mono text-xs text-red-800">
+          {error.message}
+        </p>
+      ) : null}
       {error.digest && (
         <p className="text-xs text-slate-400">Reference: {error.digest}</p>
       )}

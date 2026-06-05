@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { getProjectsWithBudget } from "@/lib/data";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { PROJECT_TYPE_LABELS } from "@/lib/project-labels";
+import { getUnitLabel } from "@/lib/units";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RagBadge, StageBadge } from "@/components/ui/badge";
 import { ReportsHeader, ReportsViewPills } from "@/components/reports/reports-header";
@@ -44,7 +45,7 @@ export default async function ProjectReportsPage() {
                     >
                       <MobileField
                         label="Section"
-                        value={p.section?.unitLabel ?? p.section?.name ?? "—"}
+                        value={getUnitLabel(p.section) ?? "—"}
                       />
                       <MobileField
                         label="Client"
@@ -101,7 +102,7 @@ export default async function ProjectReportsPage() {
                         </td>
                         <td className={desktopTdClass}>{p.title}</td>
                         <td className={desktopTdClass}>
-                          {p.section?.unitLabel ?? p.section?.name ?? "—"}
+                          {getUnitLabel(p.section) ?? "—"}
                         </td>
                         <td className={desktopTdClass}>
                           {p.client?.ministry}

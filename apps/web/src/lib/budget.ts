@@ -73,7 +73,7 @@ export function computeBudgetTotals(input: {
 }
 
 export const STAGE_LABELS: Record<string, string> = {
-  planning: "Planning",
+  planning: "Feasibility Study",
   pre_contract: "Pre-Contract",
   contract: "Contract",
   ongoing: "Ongoing",

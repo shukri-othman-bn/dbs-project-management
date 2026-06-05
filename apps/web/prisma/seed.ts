@@ -1,31 +1,42 @@
 import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { defaultUnitAllocation, UNIT_CODES } from "../src/lib/units";
 
 const prisma = new PrismaClient();
 
 async function main() {
   const passwordHash = await bcrypt.hash("password123", 10);
 
-  const sectionA = await prisma.section.upsert({
-    where: { name: "Section A - Planning" },
-    update: {},
-    create: { name: "Section A - Planning", code: "SEC-A" },
-  });
-  const sectionB = await prisma.section.upsert({
-    where: { name: "Section B - Design" },
-    update: {},
-    create: { name: "Section B - Design", code: "SEC-B" },
-  });
-  const sectionC = await prisma.section.upsert({
-    where: { name: "Section C - Implementation" },
-    update: {},
-    create: { name: "Section C - Implementation", code: "SEC-C" },
-  });
-  const sectionBm3 = await prisma.section.upsert({
-    where: { name: "DBS - BM3" },
-    update: { unitLabel: "DBS - BM3", code: "BM3" },
-    create: { name: "DBS - BM3", code: "BM3", unitLabel: "DBS - BM3" },
-  });
+  const units: Record<string, { id: string }> = {};
+  const officers: Record<string, { id: string }> = {};
+
+  for (let i = 0; i < UNIT_CODES.length; i++) {
+    const code = UNIT_CODES[i];
+    const unit = await prisma.section.upsert({
+      where: { code },
+      update: { name: code, unitLabel: code },
+      create: { name: code, code, unitLabel: code },
+    });
+    units[code] = unit;
+
+    const email = `officer${i + 1}@dbs.gov.bn`;
+    const officer = await prisma.user.upsert({
+      where: { email },
+      update: {
+        name: `Officer ${i + 1}`,
+        sectionId: unit.id,
+        role: Role.OFFICER,
+      },
+      create: {
+        email,
+        name: `Officer ${i + 1}`,
+        passwordHash,
+        role: Role.OFFICER,
+        sectionId: unit.id,
+      },
+    });
+    officers[code] = officer;
+  }
 
   await prisma.financialYear.updateMany({ data: { isCurrent: false } });
   const fy = await prisma.financialYear.upsert({
@@ -38,6 +49,24 @@ async function main() {
       isCurrent: true,
     },
   });
+
+  for (const code of UNIT_CODES) {
+    const allocation = defaultUnitAllocation(code);
+    await prisma.sectionBudget.upsert({
+      where: {
+        sectionId_financialYearId: {
+          sectionId: units[code].id,
+          financialYearId: fy.id,
+        },
+      },
+      update: { allocation },
+      create: {
+        sectionId: units[code].id,
+        financialYearId: fy.id,
+        allocation,
+      },
+    });
+  }
 
   const fundingDts = await prisma.fundingType.upsert({
     where: { name: "DTS Allocation" },
@@ -95,39 +124,6 @@ async function main() {
       role: Role.ADMIN,
     },
   });
-  const hos = await prisma.user.upsert({
-    where: { email: "hos@dbs.gov.bn" },
-    update: {},
-    create: {
-      email: "hos@dbs.gov.bn",
-      name: "Head of Section A",
-      passwordHash,
-      role: Role.HOS,
-      sectionId: sectionA.id,
-    },
-  });
-  const officer1 = await prisma.user.upsert({
-    where: { email: "officer1@dbs.gov.bn" },
-    update: {},
-    create: {
-      email: "officer1@dbs.gov.bn",
-      name: "MUHAMMAD ABHAR BIN BAHAROM",
-      passwordHash,
-      role: Role.OFFICER,
-      sectionId: sectionC.id,
-    },
-  });
-  const officer2 = await prisma.user.upsert({
-    where: { email: "officer2@dbs.gov.bn" },
-    update: {},
-    create: {
-      email: "officer2@dbs.gov.bn",
-      name: "Siti binti Abdullah",
-      passwordHash,
-      role: Role.OFFICER,
-      sectionId: sectionB.id,
-    },
-  });
 
   const projects = [
     {
@@ -137,12 +133,9 @@ async function main() {
       title:
         "TWELVE (12) WEEKS TERM CONTRACT FOR GRASS CUTTING WORKS FOR BUILDING ASSETS UNDER MINISTRY OF DEVELOPMENT, NEGARA BRUNEI DARUSSALAM",
       lifecycleStage: "ongoing" as const,
-      sectionId: sectionBm3.id,
+      unitCode: "BM3",
       clientId: clientMod.id,
       fundingTypeId: fundingDts.id,
-      oicUserId: officer1.id,
-      contractorName: "PERUSAHAAN HJ ZAIDI",
-      supervisingOfficer: "ABDUL AFIQ BIN SASNAN",
       toMonitor: false,
       allocation: 40000,
       physicalActual: 45,
@@ -172,10 +165,9 @@ async function main() {
       projectNumber: "DBS-2025-001",
       title: "Primary School Block Renovation - Tutong",
       lifecycleStage: "ongoing" as const,
-      sectionId: sectionC.id,
+      unitCode: "BM7",
       clientId: clientMoe.id,
       fundingTypeId: fundingDts.id,
-      oicUserId: officer1.id,
       toMonitor: true,
       allocation: 450000,
       physicalActual: 72,
@@ -189,10 +181,9 @@ async function main() {
       projectNumber: "DBS-2025-002",
       title: "Clinic Extension Design Services",
       lifecycleStage: "pre_contract" as const,
-      sectionId: sectionB.id,
+      unitCode: "BM2",
       clientId: clientMoh.id,
       fundingTypeId: fundingDts.id,
-      oicUserId: officer2.id,
       toMonitor: false,
       allocation: 120000,
       physicalActual: 35,
@@ -217,10 +208,9 @@ async function main() {
       projectNumber: "DBS-2025-003",
       title: "Department Building M&E Upgrade",
       lifecycleStage: "contract" as const,
-      sectionId: sectionC.id,
+      unitCode: "IMU1",
       clientId: clientMoe.id,
       fundingTypeId: fundingGov.id,
-      oicUserId: officer1.id,
       toMonitor: false,
       allocation: 280000,
       physicalActual: 15,
@@ -234,10 +224,9 @@ async function main() {
       projectNumber: "DBS-2024-089",
       title: "Road Access Improvement - Belait",
       lifecycleStage: "closed" as const,
-      sectionId: sectionA.id,
+      unitCode: "BM1",
       clientId: clientMoe.id,
       fundingTypeId: fundingDts.id,
-      oicUserId: officer2.id,
       toMonitor: false,
       allocation: 95000,
       physicalActual: 100,
@@ -245,6 +234,38 @@ async function main() {
       paymentActual: 98,
       paymentScheduled: 100,
       remarks: "Project closed. Final account settled.",
+      actionsRequired: "",
+    },
+    {
+      projectNumber: "DBS-2025-004",
+      title: "Hospital Ward Refurbishment",
+      lifecycleStage: "ongoing" as const,
+      unitCode: "BM5",
+      clientId: clientMoh.id,
+      fundingTypeId: fundingDts.id,
+      toMonitor: false,
+      allocation: 320000,
+      physicalActual: 55,
+      physicalScheduled: 60,
+      paymentActual: 40,
+      paymentScheduled: 45,
+      remarks: "Works progressing on schedule.",
+      actionsRequired: "",
+    },
+    {
+      projectNumber: "DBS-2025-005",
+      title: "Infrastructure Monitoring System",
+      lifecycleStage: "pre_contract" as const,
+      unitCode: "IMU2",
+      clientId: clientMod.id,
+      fundingTypeId: fundingGov.id,
+      toMonitor: false,
+      allocation: 180000,
+      physicalActual: 20,
+      physicalScheduled: 25,
+      paymentActual: 10,
+      paymentScheduled: 15,
+      remarks: "Consultancy phase.",
       actionsRequired: "",
     },
   ];
@@ -260,25 +281,39 @@ async function main() {
       actionsRequired,
       design,
       tendering,
+      unitCode,
       ...projectData
     } = p;
+
+    const sectionId = units[unitCode].id;
+    const oicUserId = officers[unitCode].id;
 
     const project = await prisma.project.upsert({
       where: { projectNumber: projectData.projectNumber },
       update: {
         title: projectData.title,
         lifecycleStage: projectData.lifecycleStage,
-        sectionId: projectData.sectionId,
+        sectionId,
         clientId: projectData.clientId,
         fundingTypeId: projectData.fundingTypeId,
-        oicUserId: projectData.oicUserId,
+        oicUserId,
         toMonitor: projectData.toMonitor,
         quotationOrContractNo: projectData.quotationOrContractNo,
         projectType: projectData.projectType,
-        contractorName: projectData.contractorName,
-        supervisingOfficer: projectData.supervisingOfficer,
+        contractorName:
+          "contractorName" in projectData
+            ? (projectData as { contractorName?: string }).contractorName
+            : undefined,
+        supervisingOfficer:
+          "supervisingOfficer" in projectData
+            ? (projectData as { supervisingOfficer?: string }).supervisingOfficer
+            : undefined,
       },
-      create: projectData,
+      create: {
+        ...projectData,
+        sectionId,
+        oicUserId,
+      },
     });
 
     await prisma.projectBudget.upsert({
@@ -340,6 +375,7 @@ async function main() {
             financialYearId: fy.id,
             type: "payment",
             date: new Date("2025-09-01"),
+            claimDate: new Date("2025-08-15"),
             amountApproved: allocation * 0.3,
             amountCertified: allocation * 0.28,
             voucherRef: "BV-2025-001",
@@ -350,6 +386,7 @@ async function main() {
             financialYearId: fy.id,
             type: "payment",
             date: new Date("2025-11-15"),
+            claimDate: new Date("2025-11-01"),
             amountApproved: allocation * 0.25,
             amountCertified: allocation * 0.25,
             voucherRef: "BV-2025-002",
@@ -368,10 +405,54 @@ async function main() {
           mainContractor: "ABC Construction Sdn Bhd",
           contractNo: `CTR-${projectData.projectNumber}`,
           contractSum: allocation * 0.9,
+          contractPeriod: "12 Weeks",
           contractStart: new Date("2025-05-01"),
           contractFinish: new Date("2026-02-28"),
+          revisedContractFinish: new Date("2026-05-28"),
         },
       });
+
+      const voCount = await prisma.variationOrder.count({ where: { projectId: project.id } });
+      if (voCount === 0) {
+        await prisma.variationOrder.createMany({
+          data: [
+            {
+              projectId: project.id,
+              voNo: `VO-${projectData.projectNumber}-01`,
+              amount: allocation * 0.05,
+              submittedDate: new Date("2025-08-01"),
+              approvedDate: new Date("2025-09-10"),
+            },
+            {
+              projectId: project.id,
+              voNo: `VO-${projectData.projectNumber}-02`,
+              amount: allocation * 0.03,
+              submittedDate: new Date("2025-10-15"),
+              approvedDate: null,
+            },
+          ],
+        });
+      }
+
+      await prisma.extensionOfTime.deleteMany({ where: { projectId: project.id } });
+      await prisma.extensionOfTime.createMany({
+          data: [
+            {
+              projectId: project.id,
+              eotNo: `EOT-${projectData.projectNumber}-01`,
+              eotPeriod: "4 Weeks",
+              submittedDate: new Date("2025-07-20"),
+              approvedDate: new Date("2025-08-05"),
+            },
+            {
+              projectId: project.id,
+              eotNo: `EOT-${projectData.projectNumber}-02`,
+              eotPeriod: "2 Weeks",
+              submittedDate: new Date("2025-11-01"),
+              approvedDate: null,
+            },
+          ],
+        });
     }
 
     const designData = design ?? {
@@ -411,9 +492,9 @@ async function main() {
   console.log("Login accounts (password: password123):");
   console.log("  Director:", director.email);
   console.log("  Admin:", admin.email);
-  console.log("  HOS:", hos.email);
-  console.log("  Officer 1:", officer1.email);
-  console.log("  Officer 2:", officer2.email);
+  for (let i = 0; i < UNIT_CODES.length; i++) {
+    console.log(`  Officer ${i + 1} (${UNIT_CODES[i]}):`, `officer${i + 1}@dbs.gov.bn`);
+  }
 }
 
 main()

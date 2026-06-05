@@ -6,6 +6,7 @@ import { RagBadge } from "@/components/ui/badge";
 import { ReportsHeader, ReportsViewPills } from "@/components/reports/reports-header";
 import { SpendPieChart } from "@/components/charts/spend-pie-chart";
 import Link from "next/link";
+import { getUnitLabel } from "@/lib/units";
 import {
   DesktopDataTable,
   desktopTdClass,
@@ -118,7 +119,7 @@ export default async function ExpenditureReportPage() {
                     title={p.projectNumber}
                     subtitle={p.title}
                   >
-                    <MobileField label="Section" value={p.section?.name ?? "—"} />
+                    <MobileField label="Unit" value={getUnitLabel(p.section) ?? "—"} />
                     <MobileField label="Funding" value={p.fundingType?.name ?? "—"} />
                     <MobileField label="Allocation" value={formatCurrency(p.totals.allocation)} />
                     <MobileField label="Warrant" value={formatCurrency(p.totals.warrantApproved)} />
@@ -135,7 +136,7 @@ export default async function ExpenditureReportPage() {
                 <thead>
                   <tr className="border-b">
                     <th className={desktopThClass}>Project</th>
-                    <th className={desktopThClass}>Section</th>
+                    <th className={desktopThClass}>Unit</th>
                     <th className={desktopThClass}>Funding</th>
                     <th className={desktopThClass}>Allocation</th>
                     <th className={desktopThClass}>Warrant</th>
@@ -154,7 +155,7 @@ export default async function ExpenditureReportPage() {
                         </Link>
                         <p className="text-xs text-slate-500">{p.title}</p>
                       </td>
-                      <td className={desktopTdClass}>{p.section?.name ?? "—"}</td>
+                      <td className={desktopTdClass}>{getUnitLabel(p.section) ?? "—"}</td>
                       <td className={desktopTdClass}>{p.fundingType?.name ?? "—"}</td>
                       <td className={desktopTdClass}>{formatCurrency(p.totals.allocation)}</td>
                       <td className={desktopTdClass}>{formatCurrency(p.totals.warrantApproved)}</td>

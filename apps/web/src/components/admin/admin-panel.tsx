@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormSaveActions, useFormDirty } from "@/components/ui/form-save-actions";
 
 type Tab = "sections" | "fy" | "funding" | "clients" | "users";
 
@@ -236,25 +236,35 @@ function AdminSection({
   onSubmit: (form: FormData) => void;
   loading: boolean;
 }) {
+  const { dirty, resetDirty, formTrackProps } = useFormDirty();
+  const formId = `admin-${title.toLowerCase().replace(/\s+/g, "-")}`;
+
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3">
           <CardTitle>Add {title}</CardTitle>
+          <FormSaveActions
+            formId={formId}
+            loading={loading}
+            dirty={dirty}
+            className="ml-auto"
+          />
         </CardHeader>
         <CardContent>
           <form
+            id={formId}
             onSubmit={(e) => {
               e.preventDefault();
               onSubmit(new FormData(e.currentTarget));
               e.currentTarget.reset();
+              resetDirty();
             }}
             className="space-y-4"
+            {...formTrackProps}
           >
             {fields}
-            <Button type="submit" disabled={loading} size="sm">
-              Add
-            </Button>
+            <FormSaveActions loading={loading} dirty={dirty} />
           </form>
         </CardContent>
       </Card>
