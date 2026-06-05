@@ -45,10 +45,17 @@ const reportsChildren = [
   { href: "/reports/tender-status", label: "Tender Status Report" },
 ];
 
-export function Sidebar({
+const sidebarAsideClass =
+  "flex h-full w-64 flex-col border-r border-slate-200 bg-slate-900 text-white";
+
+export function SidebarPanel({
   user,
+  className,
+  onNavigate,
 }: {
   user: { name: string; role: string; email: string };
+  className?: string;
+  onNavigate?: () => void;
 }) {
   const pathname = usePathname();
   const [masterOpen, setMasterOpen] = useState(pathname.startsWith("/master-list"));
@@ -68,13 +75,15 @@ export function Sidebar({
   const masterActive = pathname.startsWith("/master-list");
   const reportsActive = pathname.startsWith("/reports");
 
+  const linkProps = onNavigate ? { onClick: onNavigate } : {};
+
   return (
-    <aside className="flex h-screen w-64 flex-col border-r border-slate-200 bg-slate-900 text-white">
+    <aside className={cn(sidebarAsideClass, className)}>
       <div className="border-b border-slate-700 px-6 py-5">
         <h1 className="text-lg font-bold tracking-tight">DBS Projects</h1>
         <p className="mt-1 text-xs text-slate-400">Department Management</p>
       </div>
-      <nav className="flex-1 space-y-1 px-3 py-4">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {items.slice(0, 1).map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -82,6 +91,7 @@ export function Sidebar({
             <Link
               key={item.href}
               href={item.href}
+              {...linkProps}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
                 active ? "bg-slate-700 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"
@@ -120,6 +130,7 @@ export function Sidebar({
                     <Link
                       key={child.href}
                       href={child.href}
+                      {...linkProps}
                       className={cn(
                         "block rounded-lg px-3 py-2 text-sm transition-colors",
                         childActive
@@ -163,6 +174,7 @@ export function Sidebar({
                     <Link
                       key={child.href}
                       href={child.href}
+                      {...linkProps}
                       className={cn(
                         "block rounded-lg px-3 py-2 text-sm transition-colors",
                         childActive
@@ -186,6 +198,7 @@ export function Sidebar({
             <Link
               key={item.href}
               href={item.href}
+              {...linkProps}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
                 active ? "bg-slate-700 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"
@@ -209,5 +222,17 @@ export function Sidebar({
         </button>
       </div>
     </aside>
+  );
+}
+
+export function SidebarDesktop({
+  user,
+}: {
+  user: { name: string; role: string; email: string };
+}) {
+  return (
+    <div className="hidden h-screen shrink-0 lg:block">
+      <SidebarPanel user={user} className="h-screen" />
+    </div>
   );
 }

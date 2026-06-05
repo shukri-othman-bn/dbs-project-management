@@ -6,7 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { cn, formatCurrency, formatDate } from "@/lib/utils";
+import {
+  DesktopDataTable,
+  desktopTdClass,
+  desktopThClass,
+  MobileCardList,
+  MobileField,
+  MobileRecordCard,
+  ResponsiveDataView,
+} from "@/components/ui/responsive-data";
 import type { BudgetTotals } from "@/lib/budget";
 
 type BudgetLine = {
@@ -211,35 +220,62 @@ export function BudgetPanel({
         <CardHeader>
           <CardTitle>Budget Lines</CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-slate-500">
-                <th className="pb-2 pr-4">Type</th>
-                <th className="pb-2 pr-4">Date</th>
-                <th className="pb-2 pr-4">Description</th>
-                <th className="pb-2 pr-4">Approved</th>
-                <th className="pb-2 pr-4">Certified/Balance</th>
-                <th className="pb-2">Voucher</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lines.map((l) => (
-                <tr key={l.id} className="border-b">
-                  <td className="py-2 pr-4 capitalize">{l.type}</td>
-                  <td className="py-2 pr-4">{formatDate(l.date)}</td>
-                  <td className="py-2 pr-4">{l.description ?? "—"}</td>
-                  <td className="py-2 pr-4">{formatCurrency(l.amountApproved)}</td>
-                  <td className="py-2 pr-4">
-                    {l.type === "payment"
-                      ? formatCurrency(l.amountCertified ?? 0)
-                      : formatCurrency(l.amountBalance ?? 0)}
-                  </td>
-                  <td className="py-2">{l.voucherRef ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <CardContent className="p-0 lg:p-6">
+          <ResponsiveDataView
+            mobile={
+              <MobileCardList>
+                {lines.map((l) => (
+                  <MobileRecordCard
+                    key={l.id}
+                    title={<span className="capitalize">{l.type}</span>}
+                    subtitle={formatDate(l.date)}
+                  >
+                    <MobileField label="Description" value={l.description ?? "—"} span={3} />
+                    <MobileField label="Approved" value={formatCurrency(l.amountApproved)} />
+                    <MobileField
+                      label={l.type === "payment" ? "Certified" : "Balance"}
+                      value={
+                        l.type === "payment"
+                          ? formatCurrency(l.amountCertified ?? 0)
+                          : formatCurrency(l.amountBalance ?? 0)
+                      }
+                    />
+                    <MobileField label="Voucher" value={l.voucherRef ?? "—"} />
+                  </MobileRecordCard>
+                ))}
+              </MobileCardList>
+            }
+            desktop={
+              <DesktopDataTable>
+                <thead>
+                  <tr className="border-b">
+                    <th className={desktopThClass}>Type</th>
+                    <th className={desktopThClass}>Date</th>
+                    <th className={desktopThClass}>Description</th>
+                    <th className={desktopThClass}>Approved</th>
+                    <th className={desktopThClass}>Certified/Balance</th>
+                    <th className={desktopThClass}>Voucher</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lines.map((l) => (
+                    <tr key={l.id} className="border-b">
+                      <td className={cn(desktopTdClass, "capitalize")}>{l.type}</td>
+                      <td className={desktopTdClass}>{formatDate(l.date)}</td>
+                      <td className={desktopTdClass}>{l.description ?? "—"}</td>
+                      <td className={desktopTdClass}>{formatCurrency(l.amountApproved)}</td>
+                      <td className={desktopTdClass}>
+                        {l.type === "payment"
+                          ? formatCurrency(l.amountCertified ?? 0)
+                          : formatCurrency(l.amountBalance ?? 0)}
+                      </td>
+                      <td className={desktopTdClass}>{l.voucherRef ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </DesktopDataTable>
+            }
+          />
         </CardContent>
       </Card>
     </div>

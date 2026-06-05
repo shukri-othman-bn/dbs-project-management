@@ -5,6 +5,16 @@ import { STAGE_STATUS_LABELS } from "@/lib/project-labels";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ReportsHeader, ReportsViewPills } from "@/components/reports/reports-header";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
+import {
+  DesktopDataTable,
+  desktopTdClass,
+  desktopThClass,
+  MobileCardList,
+  MobileField,
+  MobileRecordCard,
+  ResponsiveDataView,
+} from "@/components/ui/responsive-data";
 
 function hasTenderData(p: Awaited<ReturnType<typeof getProjectsWithBudget>>[number]) {
   const t = p.tendering;
@@ -63,53 +73,86 @@ export default async function TenderStatusReportPage() {
         <CardHeader>
           <CardTitle>Tender Register</CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-slate-500">
-                <th className="pb-2 pr-4">Project</th>
-                <th className="pb-2 pr-4">Stage</th>
-                <th className="pb-2 pr-4">Tender no.</th>
-                <th className="pb-2 pr-4">Open</th>
-                <th className="pb-2 pr-4">Closing</th>
-                <th className="pb-2 pr-4">Extended</th>
-                <th className="pb-2 pr-4">Approved</th>
-                <th className="pb-2 pr-4">Awarded</th>
-                <th className="pb-2 pr-4">Remarks</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tenders.map((p) => {
-                const t = p.tendering;
-                return (
-                  <tr key={p.id} className="border-b border-slate-100">
-                    <td className="py-3 pr-4">
-                      <Link href={`/projects/${p.id}`} className="font-medium hover:underline">
-                        {p.projectNumber}
-                      </Link>
-                      <p className="text-xs text-slate-500 truncate max-w-[180px]">{p.title}</p>
-                    </td>
-                    <td className="py-3 pr-4 whitespace-nowrap">
-                      {STAGE_STATUS_LABELS[p.lifecycleStage]}
-                    </td>
-                    <td className="py-3 pr-4">{t?.tenderNo ?? "—"}</td>
-                    <td className="py-3 pr-4 whitespace-nowrap">{formatDate(t?.openDate)}</td>
-                    <td className="py-3 pr-4 whitespace-nowrap">{formatDate(t?.closingDate)}</td>
-                    <td className="py-3 pr-4 whitespace-nowrap">
-                      {formatDate(t?.extendedClosingDate)}
-                    </td>
-                    <td className="py-3 pr-4 whitespace-nowrap">{formatDate(t?.approvedDate)}</td>
-                    <td className="py-3 pr-4 whitespace-nowrap">{formatDate(t?.awardedDate)}</td>
-                    <td className="py-3 pr-4 max-w-[200px] truncate text-slate-600">
-                      {t?.adRemarks ?? t?.tenderValidityRemarks ?? "—"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {tenders.length === 0 && (
-            <p className="py-8 text-center text-sm text-slate-500">
+        <CardContent className="p-0 lg:p-6">
+          {tenders.length > 0 ? (
+            <ResponsiveDataView
+              mobile={
+                <MobileCardList>
+                  {tenders.map((p) => {
+                    const t = p.tendering;
+                    return (
+                      <MobileRecordCard
+                        key={p.id}
+                        href={`/projects/${p.id}`}
+                        title={p.projectNumber}
+                        subtitle={p.title}
+                      >
+                        <MobileField label="Stage" value={STAGE_STATUS_LABELS[p.lifecycleStage]} />
+                        <MobileField label="Tender no." value={t?.tenderNo ?? "—"} />
+                        <MobileField label="Open" value={formatDate(t?.openDate)} />
+                        <MobileField label="Closing" value={formatDate(t?.closingDate)} />
+                        <MobileField label="Extended" value={formatDate(t?.extendedClosingDate)} />
+                        <MobileField label="Approved" value={formatDate(t?.approvedDate)} />
+                        <MobileField label="Awarded" value={formatDate(t?.awardedDate)} />
+                        <MobileField
+                          label="Remarks"
+                          value={t?.adRemarks ?? t?.tenderValidityRemarks ?? "—"}
+                          span={3}
+                        />
+                      </MobileRecordCard>
+                    );
+                  })}
+                </MobileCardList>
+              }
+              desktop={
+                <DesktopDataTable dense>
+                  <thead>
+                    <tr className="border-b">
+                      <th className={desktopThClass}>Project</th>
+                      <th className={desktopThClass}>Stage</th>
+                      <th className={desktopThClass}>Tender no.</th>
+                      <th className={desktopThClass}>Open</th>
+                      <th className={desktopThClass}>Closing</th>
+                      <th className={desktopThClass}>Extended</th>
+                      <th className={desktopThClass}>Approved</th>
+                      <th className={desktopThClass}>Awarded</th>
+                      <th className={desktopThClass}>Remarks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tenders.map((p) => {
+                      const t = p.tendering;
+                      return (
+                        <tr key={p.id} className="border-b border-slate-100">
+                          <td className={desktopTdClass}>
+                            <Link href={`/projects/${p.id}`} className="font-medium hover:underline">
+                              {p.projectNumber}
+                            </Link>
+                            <p className="text-xs text-slate-500">{p.title}</p>
+                          </td>
+                          <td className={desktopTdClass}>
+                            {STAGE_STATUS_LABELS[p.lifecycleStage]}
+                          </td>
+                          <td className={desktopTdClass}>{t?.tenderNo ?? "—"}</td>
+                          <td className={desktopTdClass}>{formatDate(t?.openDate)}</td>
+                          <td className={desktopTdClass}>{formatDate(t?.closingDate)}</td>
+                          <td className={desktopTdClass}>
+                            {formatDate(t?.extendedClosingDate)}
+                          </td>
+                          <td className={desktopTdClass}>{formatDate(t?.approvedDate)}</td>
+                          <td className={desktopTdClass}>{formatDate(t?.awardedDate)}</td>
+                          <td className={cn(desktopTdClass, "text-slate-600")}>
+                            {t?.adRemarks ?? t?.tenderValidityRemarks ?? "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </DesktopDataTable>
+              }
+            />
+          ) : (
+            <p className="px-4 py-8 text-center text-sm text-slate-500 lg:px-6">
               No projects with tendering data
             </p>
           )}

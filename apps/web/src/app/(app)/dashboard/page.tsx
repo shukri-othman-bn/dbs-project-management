@@ -9,6 +9,15 @@ import { RagBadge, StageBadge } from "@/components/ui/badge";
 import { STAGE_LABELS } from "@/lib/budget";
 import Link from "next/link";
 import { SectionBudgetChart } from "@/components/charts/section-budget-chart";
+import {
+  DesktopDataTable,
+  desktopTdClass,
+  desktopThClass,
+  MobileCardList,
+  MobileField,
+  MobileRecordCard,
+  ResponsiveDataView,
+} from "@/components/ui/responsive-data";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -136,43 +145,70 @@ export default async function DashboardPage() {
         <CardHeader>
           <CardTitle>Recent Projects</CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-slate-500">
-                <th className="pb-2 pr-4">Number</th>
-                <th className="pb-2 pr-4">Title</th>
-                <th className="pb-2 pr-4">Stage</th>
-                <th className="pb-2 pr-4">Physical</th>
-                <th className="pb-2 pr-4">Budget</th>
-                <th className="pb-2">RAG</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projects.slice(0, 10).map((p) => (
-                <tr key={p.id} className="border-b border-slate-100">
-                  <td className="py-3 pr-4">
-                    <Link href={`/projects/${p.id}`} className="font-medium hover:underline">
-                      {p.projectNumber}
-                    </Link>
-                  </td>
-                  <td className="py-3 pr-4 max-w-xs truncate">{p.title}</td>
-                  <td className="py-3 pr-4">
-                    <StageBadge stage={p.lifecycleStage} />
-                  </td>
-                  <td className="py-3 pr-4">
-                    {formatPercent(p.latestStatus?.physicalActual ?? 0)}
-                  </td>
-                  <td className="py-3 pr-4">
-                    {formatCurrency(p.totals.paymentsCertified)} / {formatCurrency(p.totals.allocation)}
-                  </td>
-                  <td className="py-3">
-                    <RagBadge status={p.totals.rag} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <CardContent className="p-0 lg:p-6">
+          <ResponsiveDataView
+            mobile={
+              <MobileCardList>
+                {projects.slice(0, 10).map((p) => (
+                  <MobileRecordCard
+                    key={p.id}
+                    href={`/projects/${p.id}`}
+                    title={p.projectNumber}
+                    subtitle={p.title}
+                  >
+                    <MobileField label="Stage" value={<StageBadge stage={p.lifecycleStage} />} />
+                    <MobileField
+                      label="Physical"
+                      value={formatPercent(p.latestStatus?.physicalActual ?? 0)}
+                    />
+                    <MobileField
+                      label="Budget"
+                      value={`${formatCurrency(p.totals.paymentsCertified)} / ${formatCurrency(p.totals.allocation)}`}
+                    />
+                    <MobileField label="RAG" value={<RagBadge status={p.totals.rag} />} />
+                  </MobileRecordCard>
+                ))}
+              </MobileCardList>
+            }
+            desktop={
+              <DesktopDataTable>
+                <thead>
+                  <tr className="border-b">
+                    <th className={desktopThClass}>Number</th>
+                    <th className={desktopThClass}>Title</th>
+                    <th className={desktopThClass}>Stage</th>
+                    <th className={desktopThClass}>Physical</th>
+                    <th className={desktopThClass}>Budget</th>
+                    <th className={desktopThClass}>RAG</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {projects.slice(0, 10).map((p) => (
+                    <tr key={p.id} className="border-b border-slate-100">
+                      <td className={desktopTdClass}>
+                        <Link href={`/projects/${p.id}`} className="font-medium hover:underline">
+                          {p.projectNumber}
+                        </Link>
+                      </td>
+                      <td className={desktopTdClass}>{p.title}</td>
+                      <td className={desktopTdClass}>
+                        <StageBadge stage={p.lifecycleStage} />
+                      </td>
+                      <td className={desktopTdClass}>
+                        {formatPercent(p.latestStatus?.physicalActual ?? 0)}
+                      </td>
+                      <td className={desktopTdClass}>
+                        {formatCurrency(p.totals.paymentsCertified)} / {formatCurrency(p.totals.allocation)}
+                      </td>
+                      <td className={desktopTdClass}>
+                        <RagBadge status={p.totals.rag} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </DesktopDataTable>
+            }
+          />
         </CardContent>
       </Card>
     </div>

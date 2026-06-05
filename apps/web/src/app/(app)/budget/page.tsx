@@ -5,6 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RagBadge } from "@/components/ui/badge";
 import Link from "next/link";
 import { SpendPieChart } from "@/components/charts/spend-pie-chart";
+import {
+  DesktopDataTable,
+  desktopTdClass,
+  desktopThClass,
+  MobileCardList,
+  MobileField,
+  MobileRecordCard,
+  ResponsiveDataView,
+} from "@/components/ui/responsive-data";
 
 export default async function BudgetDashboardPage() {
   const session = await auth();
@@ -99,40 +108,63 @@ export default async function BudgetDashboardPage() {
         <CardHeader>
           <CardTitle>Project Budget Positions</CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-slate-500">
-                <th className="pb-2 pr-4">Project</th>
-                <th className="pb-2 pr-4">Allocation</th>
-                <th className="pb-2 pr-4">Warrant</th>
-                <th className="pb-2 pr-4">Spent</th>
-                <th className="pb-2 pr-4">Unspent</th>
-                <th className="pb-2 pr-4">Util %</th>
-                <th className="pb-2">RAG</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projects.map((p) => (
-                <tr key={p.id} className="border-b border-slate-100">
-                  <td className="py-3 pr-4">
-                    <Link href={`/projects/${p.id}`} className="font-medium hover:underline">
-                      {p.projectNumber}
-                    </Link>
-                    <p className="text-xs text-slate-500 truncate max-w-[200px]">{p.title}</p>
-                  </td>
-                  <td className="py-3 pr-4">{formatCurrency(p.totals.allocation)}</td>
-                  <td className="py-3 pr-4">{formatCurrency(p.totals.warrantApproved)}</td>
-                  <td className="py-3 pr-4">{formatCurrency(p.totals.paymentsCertified)}</td>
-                  <td className="py-3 pr-4">{formatCurrency(p.totals.unspent)}</td>
-                  <td className="py-3 pr-4">{formatPercent(p.totals.utilizationPct)}</td>
-                  <td className="py-3">
-                    <RagBadge status={p.totals.rag} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <CardContent className="p-0 lg:p-6">
+          <ResponsiveDataView
+            mobile={
+              <MobileCardList>
+                {projects.map((p) => (
+                  <MobileRecordCard
+                    key={p.id}
+                    href={`/projects/${p.id}`}
+                    title={p.projectNumber}
+                    subtitle={p.title}
+                  >
+                    <MobileField label="Allocation" value={formatCurrency(p.totals.allocation)} />
+                    <MobileField label="Warrant" value={formatCurrency(p.totals.warrantApproved)} />
+                    <MobileField label="Spent" value={formatCurrency(p.totals.paymentsCertified)} />
+                    <MobileField label="Unspent" value={formatCurrency(p.totals.unspent)} />
+                    <MobileField label="Util %" value={formatPercent(p.totals.utilizationPct)} />
+                    <MobileField label="RAG" value={<RagBadge status={p.totals.rag} />} />
+                  </MobileRecordCard>
+                ))}
+              </MobileCardList>
+            }
+            desktop={
+              <DesktopDataTable>
+                <thead>
+                  <tr className="border-b">
+                    <th className={desktopThClass}>Project</th>
+                    <th className={desktopThClass}>Allocation</th>
+                    <th className={desktopThClass}>Warrant</th>
+                    <th className={desktopThClass}>Spent</th>
+                    <th className={desktopThClass}>Unspent</th>
+                    <th className={desktopThClass}>Util %</th>
+                    <th className={desktopThClass}>RAG</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {projects.map((p) => (
+                    <tr key={p.id} className="border-b border-slate-100">
+                      <td className={desktopTdClass}>
+                        <Link href={`/projects/${p.id}`} className="font-medium hover:underline">
+                          {p.projectNumber}
+                        </Link>
+                        <p className="text-xs text-slate-500">{p.title}</p>
+                      </td>
+                      <td className={desktopTdClass}>{formatCurrency(p.totals.allocation)}</td>
+                      <td className={desktopTdClass}>{formatCurrency(p.totals.warrantApproved)}</td>
+                      <td className={desktopTdClass}>{formatCurrency(p.totals.paymentsCertified)}</td>
+                      <td className={desktopTdClass}>{formatCurrency(p.totals.unspent)}</td>
+                      <td className={desktopTdClass}>{formatPercent(p.totals.utilizationPct)}</td>
+                      <td className={desktopTdClass}>
+                        <RagBadge status={p.totals.rag} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </DesktopDataTable>
+            }
+          />
         </CardContent>
       </Card>
     </div>

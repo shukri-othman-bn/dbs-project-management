@@ -22,6 +22,15 @@ import {
 } from "@/lib/payment-matters-filters";
 import { cn } from "@/lib/utils";
 import { ListTabBar } from "@/components/master-list/list-tab-bar";
+import {
+  DesktopDataTable,
+  desktopTdClass,
+  desktopThClass,
+  MobileCardList,
+  MobileField,
+  MobileRecordCard,
+  ResponsiveDataView,
+} from "@/components/ui/responsive-data";
 
 const selectClassName =
   "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500";
@@ -98,7 +107,7 @@ function ContractorPill({ name }: { name: string | null }) {
   return (
     <span
       className={cn(
-        "inline-block max-w-[180px] truncate rounded-full px-2.5 py-0.5 text-xs font-medium ring-1",
+        "inline-block max-w-full break-words rounded-full px-2.5 py-0.5 text-xs font-medium ring-1",
         pillColor(name, CONTRACTOR_PILL_COLORS)
       )}
       title={name}
@@ -263,7 +272,7 @@ export function PaymentMattersList({ rows }: { rows: PaymentMatterRow[] }) {
         </div>
       </CardContent>
 
-      <CardContent className="space-y-0 p-0 overflow-x-auto">
+      <CardContent className="space-y-0 p-0">
         <p className="border-b border-slate-100 bg-slate-50 px-6 py-3 text-sm text-slate-600">
           <span className="font-semibold text-slate-900">{filteredRows.length}</span>
           {" record"}
@@ -282,77 +291,106 @@ export function PaymentMattersList({ rows }: { rows: PaymentMatterRow[] }) {
         </p>
 
         {filteredRows.length > 0 ? (
-          <table className="w-full min-w-[1100px] text-sm">
-            <thead>
-              <tr className="border-b bg-teal-400/90 text-left text-white">
-                <th className="px-6 py-3 font-medium">
-                  <ColumnHeader label="Unit" icon="tag" />
-                </th>
-                <th className="min-w-[280px] px-6 py-3 font-medium">
-                  <ColumnHeader label="Project Reference" icon="filter" />
-                </th>
-                <th className="px-6 py-3 font-medium">
-                  <ColumnHeader label="Payment No" icon="filter" />
-                </th>
-                <th className="px-6 py-3 font-medium">
-                  <ColumnHeader label="Certified Amount" icon="filter" />
-                </th>
-                <th className="px-6 py-3 font-medium">
-                  <ColumnHeader label="Contractor" icon="tag" />
-                </th>
-                <th className="px-6 py-3 font-medium">
-                  <ColumnHeader label="Status" icon="tag" />
-                </th>
-                <th className="w-10 px-4 py-3" aria-label="Actions" />
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRows.map((row) => (
-                <tr
-                  key={row.lineId}
-                  className="border-b border-slate-100 align-top hover:bg-slate-50/80"
-                >
-                  <td className="px-6 py-4">
-                    <UnitPill unit={row.unit} />
-                  </td>
-                  <td className="px-6 py-4">
-                    <Link
-                      href={`/projects/${row.projectId}`}
-                      className="group block space-y-1"
+          <ResponsiveDataView
+            mobile={
+              <MobileCardList>
+                {filteredRows.map((row) => (
+                  <MobileRecordCard
+                    key={row.lineId}
+                    href={`/projects/${row.projectId}`}
+                    title={row.projectReference ?? "—"}
+                    subtitle={row.projectTitle}
+                  >
+                    <MobileField label="Unit" value={<UnitPill unit={row.unit} />} />
+                    <MobileField label="Payment No" value={row.paymentNo} />
+                    <MobileField
+                      label="Certified Amount"
+                      value={
+                        row.certifiedAmount != null
+                          ? formatCurrency(row.certifiedAmount)
+                          : "—"
+                      }
+                    />
+                    <MobileField label="Contractor" value={<ContractorPill name={row.contractorName} />} />
+                    <MobileField label="Status" value={<StatusBadge status={row.status} />} />
+                  </MobileRecordCard>
+                ))}
+              </MobileCardList>
+            }
+            desktop={
+              <DesktopDataTable dense>
+                <thead>
+                  <tr className="border-b bg-teal-400/90 text-white">
+                    <th className={cn(desktopThClass, "bg-teal-400/90 text-white")}>
+                      <ColumnHeader label="Unit" icon="tag" />
+                    </th>
+                    <th className={cn(desktopThClass, "bg-teal-400/90 text-white")}>
+                      <ColumnHeader label="Project Reference" icon="filter" />
+                    </th>
+                    <th className={cn(desktopThClass, "bg-teal-400/90 text-white")}>
+                      <ColumnHeader label="Payment No" icon="filter" />
+                    </th>
+                    <th className={cn(desktopThClass, "bg-teal-400/90 text-white")}>
+                      <ColumnHeader label="Certified Amount" icon="filter" />
+                    </th>
+                    <th className={cn(desktopThClass, "bg-teal-400/90 text-white")}>
+                      <ColumnHeader label="Contractor" icon="tag" />
+                    </th>
+                    <th className={cn(desktopThClass, "bg-teal-400/90 text-white")}>
+                      <ColumnHeader label="Status" icon="tag" />
+                    </th>
+                    <th className={cn(desktopThClass, "w-8 bg-teal-400/90 text-white")} aria-label="Actions" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRows.map((row) => (
+                    <tr
+                      key={row.lineId}
+                      className="border-b border-slate-100 align-top hover:bg-slate-50/80"
                     >
-                      <span className="font-semibold text-slate-900 group-hover:underline">
-                        {row.projectReference ?? "—"}
-                      </span>
-                      <span className="block text-xs leading-relaxed text-slate-500 uppercase">
-                        {row.projectTitle}
-                      </span>
-                    </Link>
-                  </td>
-                  <td className="px-6 py-4 text-slate-700">{row.paymentNo}</td>
-                  <td className="px-6 py-4 font-medium text-slate-800">
-                    {row.certifiedAmount != null
-                      ? formatCurrency(row.certifiedAmount)
-                      : "—"}
-                  </td>
-                  <td className="px-6 py-4">
-                    <ContractorPill name={row.contractorName} />
-                  </td>
-                  <td className="px-6 py-4">
-                    <StatusBadge status={row.status} />
-                  </td>
-                  <td className="px-4 py-4 text-slate-400">
-                    <Link
-                      href={`/projects/${row.projectId}`}
-                      className="inline-flex rounded p-1 hover:bg-slate-100 hover:text-slate-600"
-                      title="Open project"
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      <td className={desktopTdClass}>
+                        <UnitPill unit={row.unit} />
+                      </td>
+                      <td className={desktopTdClass}>
+                        <Link
+                          href={`/projects/${row.projectId}`}
+                          className="group block space-y-1"
+                        >
+                          <span className="font-semibold text-slate-900 group-hover:underline">
+                            {row.projectReference ?? "—"}
+                          </span>
+                          <span className="block text-xs leading-relaxed text-slate-500 uppercase">
+                            {row.projectTitle}
+                          </span>
+                        </Link>
+                      </td>
+                      <td className={cn(desktopTdClass, "text-slate-700")}>{row.paymentNo}</td>
+                      <td className={cn(desktopTdClass, "font-medium text-slate-800")}>
+                        {row.certifiedAmount != null
+                          ? formatCurrency(row.certifiedAmount)
+                          : "—"}
+                      </td>
+                      <td className={desktopTdClass}>
+                        <ContractorPill name={row.contractorName} />
+                      </td>
+                      <td className={desktopTdClass}>
+                        <StatusBadge status={row.status} />
+                      </td>
+                      <td className={cn(desktopTdClass, "w-8 text-slate-400")}>
+                        <Link
+                          href={`/projects/${row.projectId}`}
+                          className="inline-flex rounded p-1 hover:bg-slate-100 hover:text-slate-600"
+                          title="Open project"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </DesktopDataTable>
+            }
+          />
         ) : (
           <p className="px-6 py-10 text-center text-slate-500">
             No payment records match the current filters.

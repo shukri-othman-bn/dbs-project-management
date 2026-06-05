@@ -24,6 +24,15 @@ import { countActiveMasterListFilters, type MasterListFilterState } from "@/lib/
 import { cn } from "@/lib/utils";
 import { ListTabBar } from "@/components/master-list/list-tab-bar";
 import { MasterListFiltersBar } from "@/components/master-list/master-list-filters-bar";
+import {
+  DesktopDataTable,
+  desktopTdClass,
+  desktopThClass,
+  MobileCardList,
+  MobileField,
+  MobileRecordCard,
+  ResponsiveDataView,
+} from "@/components/ui/responsive-data";
 
 function UnitPill({ unit }: { unit: string | null }) {
   if (!unit) return <span className="text-slate-400">—</span>;
@@ -37,7 +46,7 @@ function UnitPill({ unit }: { unit: string | null }) {
 function ContractorPill({ name }: { name: string | null }) {
   if (!name) return <span className="text-slate-400">—</span>;
   return (
-    <span className="inline-block max-w-[200px] truncate rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-900 ring-1 ring-amber-100">
+    <span className="inline-block max-w-full break-words rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-900 ring-1 ring-amber-100">
       {name}
     </span>
   );
@@ -169,7 +178,7 @@ export function ContractMattersList({
         />
       </CardContent>
 
-      <CardContent className="p-0 overflow-x-auto">
+      <CardContent className="p-0">
         {!isPlaceholder && (
           <p className="border-b border-slate-100 bg-slate-50 px-6 py-3 text-sm text-slate-600">
             <span className="font-semibold text-slate-900">{rowCount}</span>
@@ -235,54 +244,80 @@ function ProjectTable({
   if (rows.length === 0) return null;
 
   return (
-    <table className="w-full min-w-[1100px] text-sm">
+    <ResponsiveDataView
+      mobile={
+        <MobileCardList>
+          {rows.map((p) => (
+            <MobileRecordCard key={p.id} href={`/projects/${p.id}`} title={p.title}>
+              <MobileField label="Unit" value={<UnitPill unit={p.unit} />} />
+              {showContractorFirst && (
+                <MobileField label="Contractor" value={<ContractorPill name={p.contractorName} />} />
+              )}
+              <MobileField label="Tender no." value={p.tenderNo ?? "—"} />
+              <MobileField label="Quotation / contract" value={p.quotationOrContractNo ?? "—"} />
+              {!showContractorFirst && (
+                <MobileField label="Contractor" value={<ContractorPill name={p.contractorName} />} />
+              )}
+              <MobileField label="Start date" value={formatDate(p.startDate)} />
+              <MobileField label="Completion" value={formatDate(p.completionDate)} />
+              <MobileField
+                label="Contract sum"
+                value={p.contractSum != null ? formatCurrency(p.contractSum) : "—"}
+              />
+              <MobileField label="Project status" value={<StageBadge stage={p.lifecycleStage} />} />
+            </MobileRecordCard>
+          ))}
+        </MobileCardList>
+      }
+      desktop={
+    <DesktopDataTable dense>
       <thead>
         <tr className="border-b bg-slate-50 text-left text-slate-500">
-          <th className="px-6 py-3 font-medium">Unit</th>
-          {showContractorFirst && <th className="px-6 py-3 font-medium">Contractor</th>}
-          <th className="px-6 py-3 font-medium">Tender no.</th>
-          <th className="px-6 py-3 font-medium">Quotation / contract</th>
-          <th className="min-w-[240px] px-6 py-3 font-medium">Project title</th>
-          {!showContractorFirst && <th className="px-6 py-3 font-medium">Contractor</th>}
-          <th className="px-6 py-3 font-medium">Start date</th>
-          <th className="px-6 py-3 font-medium">Completion</th>
-          <th className="px-6 py-3 font-medium">Contract sum</th>
-          <th className="px-6 py-3 font-medium">Project status</th>
-          <th className="w-10 px-4 py-3" aria-label="Actions" />
+          <th className={desktopThClass}>Unit</th>
+          {showContractorFirst && <th className={desktopThClass}>Contractor</th>}
+          <th className={desktopThClass}>Tender no.</th>
+          <th className={desktopThClass}>Quotation / contract</th>
+          <th className={desktopThClass}>Project title</th>
+          {!showContractorFirst && <th className={desktopThClass}>Contractor</th>}
+          <th className={desktopThClass}>Start date</th>
+          <th className={desktopThClass}>Completion</th>
+          <th className={desktopThClass}>Contract sum</th>
+          <th className={desktopThClass}>Project status</th>
+          <th className={cn(desktopThClass, "w-8")} aria-label="Actions" />
         </tr>
       </thead>
       <tbody>
         {rows.map((p) => (
           <tr key={p.id} className="border-b border-slate-100 align-top hover:bg-slate-50">
-            <td className="px-6 py-3">
+            <td className={desktopTdClass}>
               <UnitPill unit={p.unit} />
             </td>
             {showContractorFirst && (
-              <td className="px-6 py-3">
+              <td className={desktopTdClass}>
                 <ContractorPill name={p.contractorName} />
               </td>
             )}
-            <td className="px-6 py-3 text-slate-700">{p.tenderNo ?? "—"}</td>
-            <td className="px-6 py-3 text-slate-700">{p.quotationOrContractNo ?? "—"}</td>
-            <td className="px-6 py-3">
+            <td className={cn(desktopTdClass, "text-slate-700")}>{p.tenderNo ?? "—"}</td>
+            <td className={cn(desktopTdClass, "text-slate-700")}>{p.quotationOrContractNo ?? "—"}</td>
+            <td className={desktopTdClass}>
               <Link href={`/projects/${p.id}`} className="font-medium text-slate-800 hover:underline">
                 {p.title}
               </Link>
             </td>
             {!showContractorFirst && (
-              <td className="px-6 py-3">
+              <td className={desktopTdClass}>
                 <ContractorPill name={p.contractorName} />
               </td>
             )}
-            <td className="px-6 py-3 text-slate-600">{formatDate(p.startDate)}</td>
-            <td className="px-6 py-3 text-slate-600">{formatDate(p.completionDate)}</td>
-            <td className="px-6 py-3 text-slate-700">
+            <td className={cn(desktopTdClass, "text-slate-600")}>{formatDate(p.startDate)}</td>
+            <td className={cn(desktopTdClass, "text-slate-600")}>{formatDate(p.completionDate)}</td>
+            <td className={cn(desktopTdClass, "text-slate-700")}>
               {p.contractSum != null ? formatCurrency(p.contractSum) : "—"}
             </td>
-            <td className="px-6 py-3">
+            <td className={desktopTdClass}>
               <StageBadge stage={p.lifecycleStage} />
             </td>
-            <td className="px-4 py-3 text-slate-400">
+            <td className={cn(desktopTdClass, "w-8 text-slate-400")}>
               <Link
                 href={`/projects/${p.id}`}
                 className="inline-flex rounded p-1 hover:bg-slate-100 hover:text-slate-600"
@@ -294,122 +329,182 @@ function ProjectTable({
           </tr>
         ))}
       </tbody>
-    </table>
+    </DesktopDataTable>
+      }
+    />
   );
 }
 
 function PaymentTable({ rows }: { rows: ContractMatterLineRow[] }) {
   if (rows.length === 0) return null;
   return (
-    <table className="w-full min-w-[1000px] text-sm">
+    <ResponsiveDataView
+      mobile={
+        <MobileCardList>
+          {rows.map((r) => (
+            <MobileRecordCard key={r.lineId} href={`/projects/${r.projectId}`} title={r.title}>
+              <MobileField label="Unit" value={<UnitPill unit={r.unit} />} />
+              <MobileField label="Date" value={formatDate(r.date)} />
+              <MobileField label="Description" value={r.description ?? "—"} span={3} />
+              <MobileField label="Approved" value={formatCurrency(r.amountApproved)} />
+              <MobileField
+                label="Certified"
+                value={r.amountCertified != null ? formatCurrency(r.amountCertified) : "—"}
+              />
+              <MobileField label="Voucher" value={r.voucherRef ?? "—"} />
+            </MobileRecordCard>
+          ))}
+        </MobileCardList>
+      }
+      desktop={
+    <DesktopDataTable dense>
       <thead>
         <tr className="border-b bg-slate-50 text-left text-slate-500">
-          <th className="px-6 py-3 font-medium">Unit</th>
-          <th className="px-6 py-3 font-medium">Project</th>
-          <th className="px-6 py-3 font-medium">Date</th>
-          <th className="px-6 py-3 font-medium">Description</th>
-          <th className="px-6 py-3 font-medium">Approved</th>
-          <th className="px-6 py-3 font-medium">Certified</th>
-          <th className="px-6 py-3 font-medium">Voucher</th>
+          <th className={desktopThClass}>Unit</th>
+          <th className={desktopThClass}>Project</th>
+          <th className={desktopThClass}>Date</th>
+          <th className={desktopThClass}>Description</th>
+          <th className={desktopThClass}>Approved</th>
+          <th className={desktopThClass}>Certified</th>
+          <th className={desktopThClass}>Voucher</th>
         </tr>
       </thead>
       <tbody>
         {rows.map((r) => (
           <tr key={r.lineId} className="border-b border-slate-100 hover:bg-slate-50">
-            <td className="px-6 py-3">
+            <td className={desktopTdClass}>
               <UnitPill unit={r.unit} />
             </td>
-            <td className="px-6 py-3">
+            <td className={desktopTdClass}>
               <Link href={`/projects/${r.projectId}`} className="font-medium text-slate-800 hover:underline">
                 {r.title}
               </Link>
             </td>
-            <td className="px-6 py-3 text-slate-600">{formatDate(r.date)}</td>
-            <td className="px-6 py-3 text-slate-600">{r.description ?? "—"}</td>
-            <td className="px-6 py-3">{formatCurrency(r.amountApproved)}</td>
-            <td className="px-6 py-3">
+            <td className={cn(desktopTdClass, "text-slate-600")}>{formatDate(r.date)}</td>
+            <td className={cn(desktopTdClass, "text-slate-600")}>{r.description ?? "—"}</td>
+            <td className={desktopTdClass}>{formatCurrency(r.amountApproved)}</td>
+            <td className={desktopTdClass}>
               {r.amountCertified != null ? formatCurrency(r.amountCertified) : "—"}
             </td>
-            <td className="px-6 py-3 text-slate-600">{r.voucherRef ?? "—"}</td>
+            <td className={cn(desktopTdClass, "text-slate-600")}>{r.voucherRef ?? "—"}</td>
           </tr>
         ))}
       </tbody>
-    </table>
+    </DesktopDataTable>
+      }
+    />
   );
 }
 
 function WarrantTable({ rows }: { rows: ContractMatterLineRow[] }) {
   if (rows.length === 0) return null;
   return (
-    <table className="w-full min-w-[1000px] text-sm">
+    <ResponsiveDataView
+      mobile={
+        <MobileCardList>
+          {rows.map((r) => (
+            <MobileRecordCard key={r.lineId} href={`/projects/${r.projectId}`} title={r.title}>
+              <MobileField label="Unit" value={<UnitPill unit={r.unit} />} />
+              <MobileField label="Date" value={formatDate(r.date)} />
+              <MobileField label="Description" value={r.description ?? "—"} span={3} />
+              <MobileField label="Approved" value={formatCurrency(r.amountApproved)} />
+              <MobileField
+                label="Balance"
+                value={r.amountBalance != null ? formatCurrency(r.amountBalance) : "—"}
+              />
+            </MobileRecordCard>
+          ))}
+        </MobileCardList>
+      }
+      desktop={
+    <DesktopDataTable dense>
       <thead>
         <tr className="border-b bg-slate-50 text-left text-slate-500">
-          <th className="px-6 py-3 font-medium">Unit</th>
-          <th className="px-6 py-3 font-medium">Project</th>
-          <th className="px-6 py-3 font-medium">Date</th>
-          <th className="px-6 py-3 font-medium">Description</th>
-          <th className="px-6 py-3 font-medium">Approved</th>
-          <th className="px-6 py-3 font-medium">Balance</th>
+          <th className={desktopThClass}>Unit</th>
+          <th className={desktopThClass}>Project</th>
+          <th className={desktopThClass}>Date</th>
+          <th className={desktopThClass}>Description</th>
+          <th className={desktopThClass}>Approved</th>
+          <th className={desktopThClass}>Balance</th>
         </tr>
       </thead>
       <tbody>
         {rows.map((r) => (
           <tr key={r.lineId} className="border-b border-slate-100 hover:bg-slate-50">
-            <td className="px-6 py-3">
+            <td className={desktopTdClass}>
               <UnitPill unit={r.unit} />
             </td>
-            <td className="px-6 py-3">
+            <td className={desktopTdClass}>
               <Link href={`/projects/${r.projectId}`} className="font-medium text-slate-800 hover:underline">
                 {r.title}
               </Link>
             </td>
-            <td className="px-6 py-3 text-slate-600">{formatDate(r.date)}</td>
-            <td className="px-6 py-3 text-slate-600">{r.description ?? "—"}</td>
-            <td className="px-6 py-3">{formatCurrency(r.amountApproved)}</td>
-            <td className="px-6 py-3">
+            <td className={cn(desktopTdClass, "text-slate-600")}>{formatDate(r.date)}</td>
+            <td className={cn(desktopTdClass, "text-slate-600")}>{r.description ?? "—"}</td>
+            <td className={desktopTdClass}>{formatCurrency(r.amountApproved)}</td>
+            <td className={desktopTdClass}>
               {r.amountBalance != null ? formatCurrency(r.amountBalance) : "—"}
             </td>
           </tr>
         ))}
       </tbody>
-    </table>
+    </DesktopDataTable>
+      }
+    />
   );
 }
 
 function BudgetTable({ rows }: { rows: ContractMatterProjectRow[] }) {
   if (rows.length === 0) return null;
   return (
-    <table className="w-full min-w-[900px] text-sm">
+    <ResponsiveDataView
+      mobile={
+        <MobileCardList>
+          {rows.map((p) => (
+            <MobileRecordCard key={p.id} href={`/projects/${p.id}`} title={p.title}>
+              <MobileField label="Unit" value={<UnitPill unit={p.unit} />} />
+              <MobileField label="Allocation" value={formatCurrency(p.allocation)} />
+              <MobileField label="Warrant approved" value={formatCurrency(p.warrantApproved)} />
+              <MobileField label="Payments certified" value={formatCurrency(p.paymentsCertified)} />
+              <MobileField label="Status" value={<StageBadge stage={p.lifecycleStage} />} />
+            </MobileRecordCard>
+          ))}
+        </MobileCardList>
+      }
+      desktop={
+    <DesktopDataTable dense>
       <thead>
         <tr className="border-b bg-slate-50 text-left text-slate-500">
-          <th className="px-6 py-3 font-medium">Unit</th>
-          <th className="px-6 py-3 font-medium">Project</th>
-          <th className="px-6 py-3 font-medium">Allocation</th>
-          <th className="px-6 py-3 font-medium">Warrant approved</th>
-          <th className="px-6 py-3 font-medium">Payments certified</th>
-          <th className="px-6 py-3 font-medium">Status</th>
+          <th className={desktopThClass}>Unit</th>
+          <th className={desktopThClass}>Project</th>
+          <th className={desktopThClass}>Allocation</th>
+          <th className={desktopThClass}>Warrant approved</th>
+          <th className={desktopThClass}>Payments certified</th>
+          <th className={desktopThClass}>Status</th>
         </tr>
       </thead>
       <tbody>
         {rows.map((p) => (
           <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50">
-            <td className="px-6 py-3">
+            <td className={desktopTdClass}>
               <UnitPill unit={p.unit} />
             </td>
-            <td className="px-6 py-3">
+            <td className={desktopTdClass}>
               <Link href={`/projects/${p.id}`} className="font-medium text-slate-800 hover:underline">
                 {p.title}
               </Link>
             </td>
-            <td className="px-6 py-3">{formatCurrency(p.allocation)}</td>
-            <td className="px-6 py-3">{formatCurrency(p.warrantApproved)}</td>
-            <td className="px-6 py-3">{formatCurrency(p.paymentsCertified)}</td>
-            <td className="px-6 py-3">
+            <td className={desktopTdClass}>{formatCurrency(p.allocation)}</td>
+            <td className={desktopTdClass}>{formatCurrency(p.warrantApproved)}</td>
+            <td className={desktopTdClass}>{formatCurrency(p.paymentsCertified)}</td>
+            <td className={desktopTdClass}>
               <StageBadge stage={p.lifecycleStage} />
             </td>
           </tr>
         ))}
       </tbody>
-    </table>
+    </DesktopDataTable>
+      }
+    />
   );
 }

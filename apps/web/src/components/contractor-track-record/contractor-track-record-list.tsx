@@ -22,6 +22,15 @@ import {
 } from "@/lib/contractor-track-record";
 import { cn } from "@/lib/utils";
 import { ListTabBar } from "@/components/master-list/list-tab-bar";
+import {
+  DesktopDataTable,
+  desktopTdClass,
+  desktopThClass,
+  MobileCardList,
+  MobileField,
+  MobileRecordCard,
+  ResponsiveDataView,
+} from "@/components/ui/responsive-data";
 
 const selectClassName =
   "w-full max-w-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500";
@@ -44,7 +53,7 @@ function ContractorPill({ name }: { name: string | null }) {
   return (
     <span
       className={cn(
-        "inline-block max-w-[200px] truncate rounded-full px-2.5 py-0.5 text-xs font-medium ring-1",
+        "inline-block max-w-full break-words rounded-full px-2.5 py-0.5 text-xs font-medium ring-1",
         pillColor(name, CONTRACTOR_PILL_COLORS)
       )}
       title={name}
@@ -171,7 +180,7 @@ export function ContractorTrackRecordList({ rows }: { rows: ContractorTrackRecor
         </label>
       </CardContent>
 
-      <CardContent className="space-y-0 p-0 overflow-x-auto">
+      <CardContent className="space-y-0 p-0">
         {contractor ? (
           <p className="border-b border-slate-100 bg-slate-50 px-6 py-3 text-sm text-slate-600">
             <span className="font-semibold text-slate-900">{tableRows.length}</span>
@@ -189,61 +198,88 @@ export function ContractorTrackRecordList({ rows }: { rows: ContractorTrackRecor
         )}
 
         {contractor && tableRows.length > 0 ? (
-          <table className="w-full min-w-[1200px] text-sm">
-            <thead>
-              <tr className="border-b bg-slate-50 text-left text-slate-500">
-                <th className="px-6 py-3 font-medium">Contractor</th>
-                <th className="px-6 py-3 font-medium">Tender no.</th>
-                <th className="px-6 py-3 font-medium">Quotation / contract</th>
-                <th className="min-w-[280px] px-6 py-3 font-medium">Project title</th>
-                <th className="px-6 py-3 font-medium">Contractor rating</th>
-                <th className="px-6 py-3 font-medium">Start date</th>
-                <th className="px-6 py-3 font-medium">Completion</th>
-                <th className="px-6 py-3 font-medium">CPC date</th>
-                <th className="px-6 py-3 font-medium">Contract amount</th>
-                <th className="px-6 py-3 font-medium">Project status</th>
-                <th className="w-10 px-4 py-3" aria-label="Actions" />
-              </tr>
-            </thead>
-            <tbody>
-              {tableRows.map((row) => (
-                <tr key={row.id} className="border-b border-slate-100 align-top hover:bg-slate-50">
-                  <td className="px-6 py-3">
-                    <ContractorPill name={row.contractorName} />
-                  </td>
-                  <td className="px-6 py-3 text-slate-700">{row.tenderNo ?? "—"}</td>
-                  <td className="px-6 py-3 text-slate-700">{row.quotationOrContractNo ?? "—"}</td>
-                  <td className="px-6 py-3">
-                    <Link
-                      href={`/projects/${row.id}`}
-                      className="font-medium text-slate-800 hover:underline"
-                    >
-                      {row.title}
-                    </Link>
-                  </td>
-                  <td className="px-6 py-3 text-slate-600">{row.contractorRating ?? "—"}</td>
-                  <td className="px-6 py-3 text-slate-600">{formatDate(row.startDate)}</td>
-                  <td className="px-6 py-3 text-slate-600">{formatDate(row.completionDate)}</td>
-                  <td className="px-6 py-3 text-slate-600">{formatDate(row.cpcDate)}</td>
-                  <td className="px-6 py-3 text-slate-700">
-                    {row.contractSum != null ? formatCurrency(row.contractSum) : "—"}
-                  </td>
-                  <td className="px-6 py-3 text-slate-700">
-                    {getTrackRecordStatusLabel(row.lifecycleStage)}
-                  </td>
-                  <td className="px-4 py-3 text-slate-400">
-                    <Link
-                      href={`/projects/${row.id}`}
-                      className="inline-flex rounded p-1 hover:bg-slate-100 hover:text-slate-600"
-                      title="Open project"
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ResponsiveDataView
+            mobile={
+              <MobileCardList>
+                {tableRows.map((row) => (
+                  <MobileRecordCard key={row.id} href={`/projects/${row.id}`} title={row.title}>
+                    <MobileField label="Contractor" value={<ContractorPill name={row.contractorName} />} />
+                    <MobileField label="Tender no." value={row.tenderNo ?? "—"} />
+                    <MobileField label="Quotation / contract" value={row.quotationOrContractNo ?? "—"} />
+                    <MobileField label="Contractor rating" value={row.contractorRating ?? "—"} />
+                    <MobileField label="Start date" value={formatDate(row.startDate)} />
+                    <MobileField label="Completion" value={formatDate(row.completionDate)} />
+                    <MobileField label="CPC date" value={formatDate(row.cpcDate)} />
+                    <MobileField
+                      label="Contract amount"
+                      value={row.contractSum != null ? formatCurrency(row.contractSum) : "—"}
+                    />
+                    <MobileField
+                      label="Project status"
+                      value={getTrackRecordStatusLabel(row.lifecycleStage)}
+                    />
+                  </MobileRecordCard>
+                ))}
+              </MobileCardList>
+            }
+            desktop={
+              <DesktopDataTable dense>
+                <thead>
+                  <tr className="border-b bg-slate-50 text-left text-slate-500">
+                    <th className={desktopThClass}>Contractor</th>
+                    <th className={desktopThClass}>Tender no.</th>
+                    <th className={desktopThClass}>Quotation / contract</th>
+                    <th className={desktopThClass}>Project title</th>
+                    <th className={desktopThClass}>Contractor rating</th>
+                    <th className={desktopThClass}>Start date</th>
+                    <th className={desktopThClass}>Completion</th>
+                    <th className={desktopThClass}>CPC date</th>
+                    <th className={desktopThClass}>Contract amount</th>
+                    <th className={desktopThClass}>Project status</th>
+                    <th className={cn(desktopThClass, "w-8")} aria-label="Actions" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {tableRows.map((row) => (
+                    <tr key={row.id} className="border-b border-slate-100 align-top hover:bg-slate-50">
+                      <td className={desktopTdClass}>
+                        <ContractorPill name={row.contractorName} />
+                      </td>
+                      <td className={cn(desktopTdClass, "text-slate-700")}>{row.tenderNo ?? "—"}</td>
+                      <td className={cn(desktopTdClass, "text-slate-700")}>{row.quotationOrContractNo ?? "—"}</td>
+                      <td className={desktopTdClass}>
+                        <Link
+                          href={`/projects/${row.id}`}
+                          className="font-medium text-slate-800 hover:underline"
+                        >
+                          {row.title}
+                        </Link>
+                      </td>
+                      <td className={cn(desktopTdClass, "text-slate-600")}>{row.contractorRating ?? "—"}</td>
+                      <td className={cn(desktopTdClass, "text-slate-600")}>{formatDate(row.startDate)}</td>
+                      <td className={cn(desktopTdClass, "text-slate-600")}>{formatDate(row.completionDate)}</td>
+                      <td className={cn(desktopTdClass, "text-slate-600")}>{formatDate(row.cpcDate)}</td>
+                      <td className={cn(desktopTdClass, "text-slate-700")}>
+                        {row.contractSum != null ? formatCurrency(row.contractSum) : "—"}
+                      </td>
+                      <td className={cn(desktopTdClass, "text-slate-700")}>
+                        {getTrackRecordStatusLabel(row.lifecycleStage)}
+                      </td>
+                      <td className={cn(desktopTdClass, "w-8 text-slate-400")}>
+                        <Link
+                          href={`/projects/${row.id}`}
+                          className="inline-flex rounded p-1 hover:bg-slate-100 hover:text-slate-600"
+                          title="Open project"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </DesktopDataTable>
+            }
+          />
         ) : contractor ? (
           <p className="px-6 py-10 text-center text-slate-500">
             No projects found for this contractor.
