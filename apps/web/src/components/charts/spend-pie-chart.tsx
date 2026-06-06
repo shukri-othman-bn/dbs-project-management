@@ -2,8 +2,10 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { formatCurrency } from "@/lib/utils";
+import { ChartContainer } from "@/components/charts/chart-container";
 
 const COLORS = ["#059669", "#475569"];
+const CHART_HEIGHT = 256;
 
 export function SpendPieChart({
   data,
@@ -11,8 +13,8 @@ export function SpendPieChart({
   data: { name: string; value: number }[];
 }) {
   return (
-    <div className="h-64">
-      <ResponsiveContainer width="100%" height="100%">
+    <ChartContainer height={CHART_HEIGHT}>
+      <ResponsiveContainer width="100%" height={CHART_HEIGHT} minWidth={0}>
         <PieChart>
           <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
             {data.map((_, i) => (
@@ -23,6 +25,6 @@ export function SpendPieChart({
           <Legend />
         </PieChart>
       </ResponsiveContainer>
-    </div>
+    </ChartContainer>
   );
 }

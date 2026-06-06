@@ -11,6 +11,9 @@ import {
   Legend,
 } from "recharts";
 import { formatCurrency } from "@/lib/utils";
+import { ChartContainer } from "@/components/charts/chart-container";
+
+const CHART_HEIGHT = 288;
 
 export function SectionBudgetChart({
   data,
@@ -19,8 +22,8 @@ export function SectionBudgetChart({
 }) {
   if (data.length === 0) return null;
   return (
-    <div className="h-72">
-      <ResponsiveContainer width="100%" height="100%">
+    <ChartContainer height={CHART_HEIGHT}>
+      <ResponsiveContainer width="100%" height={CHART_HEIGHT} minWidth={0}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="section" tick={{ fontSize: 12 }} />
@@ -31,6 +34,6 @@ export function SectionBudgetChart({
           <Bar dataKey="spent" name="Spent" fill="#059669" />
         </BarChart>
       </ResponsiveContainer>
-    </div>
+    </ChartContainer>
   );
 }
