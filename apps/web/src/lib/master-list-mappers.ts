@@ -1,6 +1,7 @@
 import type { getProjectsWithBudget } from "./data";
 import { getUnitLabel } from "./units";
-import type { ContractMatterLineRow, ContractMatterProjectRow, ContractMatterVariationOrderRow, ContractMatterEotRow } from "./contract-matters-filters";
+import type { ContractMatterLineRow, ContractMatterProjectRow, ContractMatterVariationOrderRow, ContractMatterEotRow, ContractMatterJobOrderRow, ContractMatterPurchaseOrderRow, ContractMatterRequestRow } from "./contract-matters-filters";
+import type { getMatterRequests } from "./data";
 import type { ContractorTrackRecordRow } from "./contractor-track-record";
 import type { ProjectListRow } from "./project-list-filters";
 import {
@@ -11,6 +12,7 @@ import {
 } from "./payment-matters-filters";
 
 type ProjectWithBudget = Awaited<ReturnType<typeof getProjectsWithBudget>>[number];
+type MatterRequestRecord = Awaited<ReturnType<typeof getMatterRequests>>[number];
 
 export function toProjectListRow(p: ProjectWithBudget): ProjectListRow {
   return {
@@ -203,6 +205,77 @@ export function toContractMatterEotRows(p: ProjectWithBudget): ContractMatterEot
     ...base,
     ...projectFields,
   }));
+}
+
+export function toContractMatterJobOrderRows(p: ProjectWithBudget): ContractMatterJobOrderRow[] {
+  const base = contractMatterRecordBase(p);
+
+  return p.jobOrders.map((jo) => ({
+    id: jo.id,
+    contractAmount: base.quotationContractAmount,
+    fsorPercent: jo.fsorPercent,
+    joNo: jo.joNo,
+    joAmount: jo.joAmount,
+    joStart: jo.joStart?.toISOString() ?? null,
+    actualJoFinish: jo.actualJoFinish?.toISOString() ?? null,
+    joEdlpDue: jo.joEdlpDue?.toISOString() ?? null,
+    cmgdIssued: jo.cmgdIssued?.toISOString() ?? null,
+    projectId: base.projectId,
+    unit: base.unit,
+    title: base.title,
+    quotationNo: base.quotationNo,
+    contractNo: base.contractNo,
+    contractorName: base.contractorName,
+    lifecycleStage: base.lifecycleStage,
+    projectType: base.projectType,
+    vote: base.vote,
+    ministry: base.ministry,
+    department: base.department,
+  }));
+}
+
+export function toContractMatterPurchaseOrderRows(
+  p: ProjectWithBudget
+): ContractMatterPurchaseOrderRow[] {
+  const base = contractMatterRecordBase(p);
+
+  return p.purchaseOrders.map((po) => ({
+    id: po.id,
+    contractAmount: base.quotationContractAmount,
+    claimDate: po.claimDate?.toISOString() ?? null,
+    claimCertified: po.claimCertified,
+    poAmount: po.poAmount,
+    sesDate: po.sesDate?.toISOString() ?? null,
+    invoiceDate: po.invoiceDate?.toISOString() ?? null,
+    eDispatchedDate: po.eDispatchedDate?.toISOString() ?? null,
+    paidDate: po.paidDate?.toISOString() ?? null,
+    projectId: base.projectId,
+    unit: base.unit,
+    title: base.title,
+    quotationNo: base.quotationNo,
+    contractNo: base.contractNo,
+    contractorName: base.contractorName,
+    lifecycleStage: base.lifecycleStage,
+    projectType: base.projectType,
+    vote: base.vote,
+    ministry: base.ministry,
+    department: base.department,
+  }));
+}
+
+export function toContractMatterRequestRow(r: MatterRequestRecord): ContractMatterRequestRow {
+  return {
+    id: r.id,
+    unit: getUnitLabel(r.section),
+    ticketNo: r.ticketNo,
+    complainant: r.complainant,
+    contactNo: r.contactNo,
+    address: r.address,
+    complaintReceived: r.complaintReceived?.toISOString() ?? null,
+    receivedMethod: r.receivedMethod,
+    typeOfComplaint: r.typeOfComplaint,
+    status: r.status,
+  };
 }
 
 export function toPaymentMatterRows(projects: ProjectWithBudget[]): PaymentMatterRow[] {

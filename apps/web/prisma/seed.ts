@@ -453,6 +453,58 @@ async function main() {
             },
           ],
         });
+
+      await prisma.jobOrder.deleteMany({ where: { projectId: project.id } });
+      await prisma.jobOrder.createMany({
+        data: [
+          {
+            projectId: project.id,
+            joNo: `JO-${projectData.projectNumber}-01`,
+            joAmount: allocation * 0.08,
+            fsorPercent: 92,
+            joStart: new Date("2025-06-01"),
+            actualJoFinish: new Date("2025-08-15"),
+            joEdlpDue: new Date("2025-09-01"),
+            cmgdIssued: new Date("2025-08-20"),
+          },
+          {
+            projectId: project.id,
+            joNo: `JO-${projectData.projectNumber}-02`,
+            joAmount: allocation * 0.04,
+            fsorPercent: 88,
+            joStart: new Date("2025-10-01"),
+            actualJoFinish: null,
+            joEdlpDue: new Date("2025-12-01"),
+            cmgdIssued: null,
+          },
+        ],
+      });
+
+      await prisma.purchaseOrder.deleteMany({ where: { projectId: project.id } });
+      await prisma.purchaseOrder.createMany({
+        data: [
+          {
+            projectId: project.id,
+            claimDate: new Date("2025-07-01"),
+            claimCertified: allocation * 0.06,
+            poAmount: allocation * 0.06,
+            sesDate: new Date("2025-07-15"),
+            invoiceDate: new Date("2025-08-01"),
+            eDispatchedDate: new Date("2025-08-20"),
+            paidDate: new Date("2025-09-05"),
+          },
+          {
+            projectId: project.id,
+            claimDate: new Date("2025-11-10"),
+            claimCertified: allocation * 0.04,
+            poAmount: allocation * 0.04,
+            sesDate: new Date("2025-11-20"),
+            invoiceDate: null,
+            eDispatchedDate: null,
+            paidDate: null,
+          },
+        ],
+      });
     }
 
     const designData = design ?? {
@@ -487,6 +539,90 @@ async function main() {
       create: { projectId: project.id },
     });
   }
+
+  await prisma.matterRequest.deleteMany();
+  const requestSamples = [
+    {
+      unitCode: "BM1",
+      ticketNo: "TKT-2025-001",
+      complainant: "Ahmad bin Haji Yusof",
+      contactNo: "+673 712 3456",
+      address: "Kg Sengkurong, Brunei-Muara",
+      complaintReceived: new Date("2025-06-12"),
+      receivedMethod: "Walk-in",
+      typeOfComplaint: "Road defect",
+      status: "Open",
+    },
+    {
+      unitCode: "BM1",
+      ticketNo: "TKT-2025-002",
+      complainant: "Siti binti Abdullah",
+      contactNo: "+673 823 4567",
+      address: "Jalan Berakas, Brunei-Muara",
+      complaintReceived: new Date("2025-07-03"),
+      receivedMethod: "Email",
+      typeOfComplaint: "Drainage",
+      status: "In Progress",
+    },
+    {
+      unitCode: "BM2",
+      ticketNo: "TKT-2025-003",
+      complainant: "Haji Omar bin Bakar",
+      contactNo: "+673 734 5678",
+      address: "Kg Tutong",
+      complaintReceived: new Date("2025-08-15"),
+      receivedMethod: "Phone",
+      typeOfComplaint: "Street lighting",
+      status: "Closed",
+    },
+    {
+      unitCode: "BM3",
+      ticketNo: "TKT-2025-004",
+      complainant: "Nurul Izzati",
+      contactNo: "+673 845 6789",
+      address: "Seria, Belait",
+      complaintReceived: new Date("2025-09-01"),
+      receivedMethod: "Online form",
+      typeOfComplaint: "Pothole",
+      status: "Open",
+    },
+    {
+      unitCode: "IMU1",
+      ticketNo: "TKT-2025-005",
+      complainant: "Lim Wei Ming",
+      contactNo: "+673 756 7890",
+      address: "Kg Kiudang, Tutong",
+      complaintReceived: new Date("2025-10-20"),
+      receivedMethod: "Walk-in",
+      typeOfComplaint: "Footpath damage",
+      status: "In Progress",
+    },
+    {
+      unitCode: "IMU2",
+      ticketNo: "TKT-2025-006",
+      complainant: "Rosnah binti Haji",
+      contactNo: "+673 867 8901",
+      address: "Kg Lamunin, Tutong",
+      complaintReceived: new Date("2025-11-05"),
+      receivedMethod: "Email",
+      typeOfComplaint: "Flooding",
+      status: "Open",
+    },
+  ] as const;
+
+  await prisma.matterRequest.createMany({
+    data: requestSamples.map((sample) => ({
+      sectionId: units[sample.unitCode].id,
+      ticketNo: sample.ticketNo,
+      complainant: sample.complainant,
+      contactNo: sample.contactNo,
+      address: sample.address,
+      complaintReceived: sample.complaintReceived,
+      receivedMethod: sample.receivedMethod,
+      typeOfComplaint: sample.typeOfComplaint,
+      status: sample.status,
+    })),
+  });
 
   console.log("Seed complete.");
   console.log("Login accounts (password: password123):");

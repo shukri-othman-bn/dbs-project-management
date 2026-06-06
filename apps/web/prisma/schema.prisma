@@ -57,6 +57,7 @@ model Section {
   users     User[]
   projects  Project[]
   budgets   SectionBudget[]
+  matterRequests MatterRequest[]
   createdAt DateTime        @default(now())
 }
 
@@ -134,6 +135,8 @@ model Project {
   budgetLines           BudgetLine[]
   variationOrders       VariationOrder[]
   extensionOfTimes      ExtensionOfTime[]
+  jobOrders             JobOrder[]
+  purchaseOrders        PurchaseOrder[]
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
 }
@@ -303,4 +306,50 @@ model ExtensionOfTime {
   approvedDate  DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+model JobOrder {
+  id              String    @id @default(cuid())
+  projectId       String
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  joNo            String?
+  joAmount        Float     @default(0)
+  fsorPercent     Float?
+  joStart         DateTime?
+  actualJoFinish  DateTime?
+  joEdlpDue       DateTime?
+  cmgdIssued      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model PurchaseOrder {
+  id              String    @id @default(cuid())
+  projectId       String
+  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  claimDate       DateTime?
+  claimCertified  Float?
+  poAmount        Float     @default(0)
+  sesDate         DateTime?
+  invoiceDate     DateTime?
+  eDispatchedDate DateTime?
+  paidDate        DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model MatterRequest {
+  id                String    @id @default(cuid())
+  sectionId         String?
+  section           Section?  @relation(fields: [sectionId], references: [id])
+  ticketNo          String?
+  complainant       String?
+  contactNo         String?
+  address           String?
+  complaintReceived DateTime?
+  receivedMethod    String?
+  typeOfComplaint   String?
+  status            String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }

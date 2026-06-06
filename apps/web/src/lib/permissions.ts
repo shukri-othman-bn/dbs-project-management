@@ -38,3 +38,11 @@ export function projectFilterForUser(user: SessionUser) {
   }
   return { id: "none" };
 }
+
+export function matterRequestFilterForUser(user: SessionUser) {
+  if (canViewAllProjects(user)) return {};
+  if (user.sectionId) {
+    return { sectionId: user.sectionId };
+  }
+  return { id: "none" };
+}

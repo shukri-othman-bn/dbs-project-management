@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 import { computeBudgetTotals } from "./budget";
-import { projectFilterForUser, SessionUser, canViewAllProjects } from "./permissions";
+import { projectFilterForUser, matterRequestFilterForUser, SessionUser, canViewAllProjects } from "./permissions";
 import { getUnitLabel, UNIT_CODES } from "./units";
 
 export async function getCurrentFinancialYear() {
@@ -30,6 +30,8 @@ export async function getProjectsWithBudget(user: SessionUser) {
       completion: true,
       variationOrders: { orderBy: { submittedDate: "desc" } },
       extensionOfTimes: { orderBy: { submittedDate: "desc" } },
+      jobOrders: { orderBy: { joStart: "desc" } },
+      purchaseOrders: { orderBy: { claimDate: "desc" } },
     },
     orderBy: { updatedAt: "desc" },
   });
@@ -47,6 +49,16 @@ export async function getProjectsWithBudget(user: SessionUser) {
     });
     const latest = p.statusUpdates[0];
     return { ...p, budget, totals, latestStatus: latest };
+  });
+}
+
+export async function getMatterRequests(user: SessionUser) {
+  const filter = matterRequestFilterForUser(user);
+
+  return prisma.matterRequest.findMany({
+    where: filter.id === "none" ? { id: "impossible" } : filter,
+    include: { section: true },
+    orderBy: { complaintReceived: "desc" },
   });
 }
 

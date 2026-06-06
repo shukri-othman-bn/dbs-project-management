@@ -235,7 +235,7 @@ export function ProjectForm({
           </div>
           {!project && currentFyId && (
             <div>
-              <Label htmlFor="allocation">FY Allocation (BND)</Label>
+              <Label htmlFor="allocation">FY Allocation ($)</Label>
               <Input
                 id="allocation"
                 name="allocation"

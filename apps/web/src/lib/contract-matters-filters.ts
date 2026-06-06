@@ -11,7 +11,6 @@ export const CONTRACT_MATTER_TABS = [
   { id: "budget", label: "Budget" },
   { id: "purchase-order", label: "Purchase Order" },
   { id: "request", label: "Request" },
-  { id: "contractor", label: "Contractor" },
 ] as const;
 
 export type ContractMatterTabId = (typeof CONTRACT_MATTER_TABS)[number]["id"];
@@ -23,11 +22,7 @@ export const CONTRACT_MATTER_TAB_IDS = new Set(
 export const DEFAULT_CONTRACT_MATTER_TAB: ContractMatterTabId = "project";
 
 /** Tabs that will show data once dedicated records exist in the system. */
-export const CONTRACT_MATTER_PLACEHOLDER_TABS = new Set<ContractMatterTabId>([
-  "job-order",
-  "purchase-order",
-  "request",
-]);
+export const CONTRACT_MATTER_PLACEHOLDER_TABS = new Set<ContractMatterTabId>([]);
 
 export type ContractMatterProjectRow = {
   id: string;
@@ -117,6 +112,65 @@ export type ContractMatterEotRow = {
   vote: string | null;
   ministry: string | null;
   department: string | null;
+};
+
+export type ContractMatterJobOrderRow = {
+  id: string;
+  projectId: string;
+  unit: string | null;
+  title: string;
+  quotationNo: string | null;
+  contractNo: string | null;
+  contractorName: string | null;
+  contractAmount: number | null;
+  fsorPercent: number | null;
+  joNo: string | null;
+  joAmount: number;
+  joStart: string | null;
+  actualJoFinish: string | null;
+  joEdlpDue: string | null;
+  cmgdIssued: string | null;
+  lifecycleStage: LifecycleStage;
+  projectType: ProjectType | null;
+  vote: string | null;
+  ministry: string | null;
+  department: string | null;
+};
+
+export type ContractMatterPurchaseOrderRow = {
+  id: string;
+  projectId: string;
+  unit: string | null;
+  title: string;
+  quotationNo: string | null;
+  contractNo: string | null;
+  contractorName: string | null;
+  contractAmount: number | null;
+  claimDate: string | null;
+  claimCertified: number | null;
+  poAmount: number;
+  sesDate: string | null;
+  invoiceDate: string | null;
+  eDispatchedDate: string | null;
+  paidDate: string | null;
+  lifecycleStage: LifecycleStage;
+  projectType: ProjectType | null;
+  vote: string | null;
+  ministry: string | null;
+  department: string | null;
+};
+
+export type ContractMatterRequestRow = {
+  id: string;
+  unit: string | null;
+  ticketNo: string | null;
+  complainant: string | null;
+  contactNo: string | null;
+  address: string | null;
+  complaintReceived: string | null;
+  receivedMethod: string | null;
+  typeOfComplaint: string | null;
+  status: string | null;
 };
 
 export function getContractMatterTabLabel(tab: ContractMatterTabId) {
@@ -373,6 +427,140 @@ export function filterEotRows(
     }
     if (filters.ministry && row.ministry !== filters.ministry) return false;
     if (filters.department && row.department !== filters.department) return false;
+    return true;
+  });
+}
+
+export function filterJobOrderRows(
+  rows: ContractMatterJobOrderRow[],
+  filters: {
+    search: string;
+    unit: string;
+    vote: string;
+    contractor: string;
+    projectType: string;
+    projectStatus: string;
+    ministry: string;
+    department: string;
+  }
+) {
+  return rows.filter((row) => {
+    const q = filters.search.trim().toLowerCase();
+    if (q) {
+      const haystack = [
+        row.title,
+        row.quotationNo,
+        row.contractNo,
+        row.contractorName,
+        row.unit,
+        row.joNo,
+        row.vote,
+        row.ministry,
+        row.department,
+        row.projectType ? PROJECT_TYPE_LABELS[row.projectType] : null,
+        row.fsorPercent != null ? `${row.fsorPercent}%` : null,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    if (filters.unit && row.unit !== filters.unit) return false;
+    if (filters.vote && row.vote !== filters.vote) return false;
+    if (filters.contractor && row.contractorName !== filters.contractor) return false;
+    if (filters.projectType && row.projectType !== filters.projectType) return false;
+    if (
+      filters.projectStatus &&
+      STAGE_STATUS_LABELS[row.lifecycleStage] !== filters.projectStatus
+    ) {
+      return false;
+    }
+    if (filters.ministry && row.ministry !== filters.ministry) return false;
+    if (filters.department && row.department !== filters.department) return false;
+    return true;
+  });
+}
+
+export function filterPurchaseOrderRows(
+  rows: ContractMatterPurchaseOrderRow[],
+  filters: {
+    search: string;
+    unit: string;
+    vote: string;
+    contractor: string;
+    projectType: string;
+    projectStatus: string;
+    ministry: string;
+    department: string;
+  }
+) {
+  return rows.filter((row) => {
+    const q = filters.search.trim().toLowerCase();
+    if (q) {
+      const haystack = [
+        row.title,
+        row.quotationNo,
+        row.contractNo,
+        row.contractorName,
+        row.unit,
+        row.vote,
+        row.ministry,
+        row.department,
+        row.projectType ? PROJECT_TYPE_LABELS[row.projectType] : null,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    if (filters.unit && row.unit !== filters.unit) return false;
+    if (filters.vote && row.vote !== filters.vote) return false;
+    if (filters.contractor && row.contractorName !== filters.contractor) return false;
+    if (filters.projectType && row.projectType !== filters.projectType) return false;
+    if (
+      filters.projectStatus &&
+      STAGE_STATUS_LABELS[row.lifecycleStage] !== filters.projectStatus
+    ) {
+      return false;
+    }
+    if (filters.ministry && row.ministry !== filters.ministry) return false;
+    if (filters.department && row.department !== filters.department) return false;
+    return true;
+  });
+}
+
+export function filterRequestRows(
+  rows: ContractMatterRequestRow[],
+  filters: {
+    search: string;
+    unit: string;
+    vote: string;
+    contractor: string;
+    projectType: string;
+    projectStatus: string;
+    ministry: string;
+    department: string;
+  }
+) {
+  return rows.filter((row) => {
+    const q = filters.search.trim().toLowerCase();
+    if (q) {
+      const haystack = [
+        row.ticketNo,
+        row.complainant,
+        row.contactNo,
+        row.address,
+        row.unit,
+        row.receivedMethod,
+        row.typeOfComplaint,
+        row.status,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    if (filters.unit && row.unit !== filters.unit) return false;
     return true;
   });
 }
