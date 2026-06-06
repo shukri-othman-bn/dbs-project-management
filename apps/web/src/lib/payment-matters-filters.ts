@@ -137,7 +137,8 @@ export function paymentMatterMatchesSearch(row: PaymentMatterRow, query: string)
       {
         title: row.projectTitle,
         tenderNo: row.tenderNo,
-        quotationOrContractNo: row.projectReference,
+        quotationNo: row.projectReference,
+        contractNo: row.projectReference,
         contractorName: row.contractorName,
         unit: row.unit,
         vote: row.vote,
