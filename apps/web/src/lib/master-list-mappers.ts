@@ -4,17 +4,51 @@ import type { ContractMatterLineRow, ContractMatterProjectRow, ContractMatterVar
 import type { getMatterRequests } from "./data";
 import type { ContractorTrackRecordRow } from "./contractor-track-record";
 import type { ProjectListRow } from "./project-list-filters";
-import {
-  derivePaymentNo,
-  derivePaymentProcessTab,
-  derivePaymentStatus,
-  type PaymentMatterRow,
-} from "./payment-matters-filters";
-
 type ProjectWithBudget = Awaited<ReturnType<typeof getProjectsWithBudget>>[number];
 type MatterRequestRecord = Awaited<ReturnType<typeof getMatterRequests>>[number];
 
+function latestApprovedEotDate(
+  extensionOfTimes: { approvedDate: Date | null }[]
+): string | null {
+  let latest: Date | null = null;
+  for (const eot of extensionOfTimes) {
+    if (eot.approvedDate && (!latest || eot.approvedDate > latest)) {
+      latest = eot.approvedDate;
+    }
+  }
+  return latest?.toISOString() ?? null;
+}
+
+function latestCmgdIssuedDate(jobOrders: { cmgdIssued: Date | null }[]): string | null {
+  let latest: Date | null = null;
+  for (const jo of jobOrders) {
+    if (jo.cmgdIssued && (!latest || jo.cmgdIssued > latest)) {
+      latest = jo.cmgdIssued;
+    }
+  }
+  return latest?.toISOString() ?? null;
+}
+
+function latestVoDates(variationOrders: { submittedDate: Date | null; approvedDate: Date | null }[]) {
+  let latestSubmitted: Date | null = null;
+  let latestApproved: Date | null = null;
+  for (const vo of variationOrders) {
+    if (vo.submittedDate && (!latestSubmitted || vo.submittedDate > latestSubmitted)) {
+      latestSubmitted = vo.submittedDate;
+    }
+    if (vo.approvedDate && (!latestApproved || vo.approvedDate > latestApproved)) {
+      latestApproved = vo.approvedDate;
+    }
+  }
+  return {
+    submitted: latestSubmitted?.toISOString() ?? null,
+    approved: latestApproved?.toISOString() ?? null,
+  };
+}
+
 export function toProjectListRow(p: ProjectWithBudget): ProjectListRow {
+  const voDates = latestVoDates(p.variationOrders);
+
   return {
     id: p.id,
     projectNumber: p.projectNumber,
@@ -26,6 +60,7 @@ export function toProjectListRow(p: ProjectWithBudget): ProjectListRow {
     toMonitor: p.toMonitor,
     unit: getUnitLabel(p.section),
     vote: p.design?.vote ?? null,
+    designProjectNo: p.design?.designProjectNo ?? null,
     tenderNo: p.tendering?.tenderNo ?? null,
     oicName: p.oic?.name ?? null,
     ministry: p.client?.ministry ?? null,
@@ -35,11 +70,50 @@ export function toProjectListRow(p: ProjectWithBudget): ProjectListRow {
     paymentsCertified: p.totals.paymentsCertified,
     rag: p.totals.rag,
     completionDate: p.completion?.completionDate?.toISOString() ?? null,
+    cpcDate: (p.contract?.cpcDate ?? p.contract?.cpcIssued)?.toISOString() ?? null,
+    finalAccountDate: p.completion?.finalAccountDate?.toISOString() ?? null,
+    defectsLiabilityEnd: p.completion?.defectsLiabilityEnd?.toISOString() ?? null,
     tenderOpenDate: p.tendering?.openDate?.toISOString() ?? null,
     tenderClosingDate: p.tendering?.closingDate?.toISOString() ?? null,
     tenderExtendedDate: p.tendering?.extendedClosingDate?.toISOString() ?? null,
     tenderApprovedDate: p.tendering?.approvedDate?.toISOString() ?? null,
+    tenderReceivedDate: p.tendering?.receivedDate?.toISOString() ?? null,
+    tenderAssessmentSubmittedDate: p.tendering?.assessmentSubmittedDate?.toISOString() ?? null,
+    tenderLoaDate: p.tendering?.loaDate?.toISOString() ?? null,
     tenderRemarks: p.tendering?.adRemarks ?? p.tendering?.tenderValidityRemarks ?? null,
+    bcaDateAssigned: p.bca?.dateAssigned?.toISOString() ?? null,
+    bcaDateDue: p.bca?.dateDue?.toISOString() ?? null,
+    bcaDateCompleted: p.bca?.dateCompleted?.toISOString() ?? null,
+    bcaEstimate: p.bca?.estimate ?? p.design?.estimate ?? null,
+    bcaLetterDate: p.bca?.letterDate?.toISOString() ?? null,
+    feasibilityRequestDate: p.feasibility?.requestDate?.toISOString() ?? null,
+    feasibilitySiteInspection: p.feasibility?.siteInspection?.toISOString() ?? null,
+    feasibilityEstimate: p.feasibility?.estimate ?? null,
+    feasibilityProposedPeriod: p.feasibility?.proposedPeriod ?? null,
+    feasibilityEstimateSubmitted: p.feasibility?.estimateSubmitted?.toISOString() ?? null,
+    feasibilityDateClientConfirm: p.feasibility?.dateClientConfirm?.toISOString() ?? null,
+    designDateConfirmed: p.design?.dateConfirmed?.toISOString() ?? null,
+    designEstimate: p.design?.estimate ?? null,
+    designQuotationTenderDueDate: p.design?.quotationTenderDueDate?.toISOString() ?? null,
+    designActualQuotationTenderDate: p.design?.actualQuotationTenderDate?.toISOString() ?? null,
+    contractSum: p.contract?.revisedContractSum ?? p.contract?.contractSum ?? null,
+    contractPeriod: p.contract?.contractPeriod ?? p.design?.contractPeriod ?? null,
+    loaIssuedDate:
+      p.tendering?.loaDate?.toISOString() ?? p.contract?.loaIssued?.toISOString() ?? null,
+    sitePossessionDate: p.contract?.sitePossessionDate?.toISOString() ?? null,
+    contractStartDate: p.contract?.contractStart?.toISOString() ?? null,
+    contractFinishDate:
+      p.contract?.revisedContractFinish?.toISOString() ??
+      p.contract?.contractFinish?.toISOString() ??
+      null,
+    latestEotDate: latestApprovedEotDate(p.extensionOfTimes),
+    cncDate: p.contract?.cncDate?.toISOString() ?? null,
+    edlpDate: p.contract?.edlp?.toISOString() ?? null,
+    cmgdIssuedDate: latestCmgdIssuedDate(p.jobOrders),
+    finalVoSubmittedDate: voDates.submitted,
+    finalVoApprovedDate: voDates.approved,
+    finalContractSum:
+      p.contract?.finalAccountSum ?? p.contract?.revisedContractSum ?? p.contract?.contractSum ?? null,
   };
 }
 
@@ -207,6 +281,170 @@ export function toContractMatterEotRows(p: ProjectWithBudget): ContractMatterEot
   }));
 }
 
+function amountsClose(a: number, b: number) {
+  return Math.abs(a - b) < Math.max(1, Math.abs(a) * 0.02);
+}
+
+function datesClose(
+  a: Date | null | undefined,
+  b: Date | null | undefined,
+  maxDays = 45
+) {
+  if (!a || !b) return false;
+  return Math.abs(a.getTime() - b.getTime()) <= maxDays * 24 * 60 * 60 * 1000;
+}
+
+function purchaseOrderWorkflowFields(po: ProjectWithBudget["purchaseOrders"][number]) {
+  return {
+    poId: po.poId,
+    claimDate: po.claimDate?.toISOString() ?? null,
+    claimCertified: po.claimCertified,
+    poAmount: po.poAmount,
+    sesDate: po.sesDate?.toISOString() ?? null,
+    invoiceDate: po.invoiceDate?.toISOString() ?? null,
+    eDispatchedDate: po.eDispatchedDate?.toISOString() ?? null,
+    eDispatchRef: po.eDispatchRef,
+    paidDate: po.paidDate?.toISOString() ?? null,
+  };
+}
+
+function matchPurchaseOrderToJobOrder(
+  jo: ProjectWithBudget["jobOrders"][number],
+  candidates: ProjectWithBudget["purchaseOrders"]
+) {
+  const amountMatch = candidates.find((po) => amountsClose(po.poAmount, jo.joAmount));
+  if (amountMatch) return amountMatch;
+  return candidates.find((po) => datesClose(po.claimDate, jo.joStart));
+}
+
+function matchPurchaseOrderToPaymentLine(
+  line: ProjectWithBudget["budgetLines"][number],
+  candidates: ProjectWithBudget["purchaseOrders"]
+) {
+  const dateMatch = candidates.find(
+    (po) =>
+      po.claimDate &&
+      line.claimDate &&
+      po.claimDate.getTime() === line.claimDate.getTime()
+  );
+  if (dateMatch) return dateMatch;
+
+  const certified = line.amountCertified ?? line.amountApproved;
+  return candidates.find(
+    (po) => po.claimCertified != null && amountsClose(po.claimCertified, certified)
+  );
+}
+
+function purchaseOrderRecordBase(
+  p: ProjectWithBudget,
+  workflow: ReturnType<typeof purchaseOrderWorkflowFields>,
+  refs: {
+    id: string;
+    claimSource: "job-order" | "payment-valuation";
+    joNo: string | null;
+    paymentDescription: string | null;
+  }
+) {
+  const base = contractMatterRecordBase(p);
+
+  return {
+    ...refs,
+    contractAmount: base.quotationContractAmount,
+    ...workflow,
+    projectId: base.projectId,
+    unit: base.unit,
+    title: base.title,
+    quotationNo: base.quotationNo,
+    contractNo: base.contractNo,
+    contractorName: base.contractorName,
+    lifecycleStage: base.lifecycleStage,
+    projectType: base.projectType,
+    vote: base.vote,
+    ministry: base.ministry,
+    department: base.department,
+  };
+}
+
+export function toPaymentClaimsRows(p: ProjectWithBudget): ContractMatterPurchaseOrderRow[] {
+  const usedPoIds = new Set<string>();
+
+  function takePurchaseOrder(
+    matcher: (candidates: ProjectWithBudget["purchaseOrders"]) =>
+      | ProjectWithBudget["purchaseOrders"][number]
+      | undefined
+  ) {
+    const po = matcher(p.purchaseOrders.filter((candidate) => !usedPoIds.has(candidate.id)));
+    if (!po) return null;
+    usedPoIds.add(po.id);
+    return po;
+  }
+
+  const jobOrderRows = [...p.jobOrders]
+    .sort((a, b) => (a.joStart?.getTime() ?? 0) - (b.joStart?.getTime() ?? 0))
+    .map((jo) => {
+      const po = takePurchaseOrder((candidates) => matchPurchaseOrderToJobOrder(jo, candidates));
+      const workflow = po
+        ? purchaseOrderWorkflowFields(po)
+        : {
+            poId: null,
+            claimDate: jo.joStart?.toISOString() ?? null,
+            claimCertified: jo.joAmount,
+            poAmount: jo.joAmount,
+            sesDate: null,
+            invoiceDate: null,
+            eDispatchedDate: null,
+            eDispatchRef: null,
+            paidDate: null,
+          };
+
+      return purchaseOrderRecordBase(p, workflow, {
+        id: `job-order-claim-${jo.id}`,
+        claimSource: "job-order",
+        joNo: jo.joNo,
+        paymentDescription: null,
+      });
+    });
+
+  const paymentValuationRows = p.budgetLines
+    .filter((line) => line.type === "payment")
+    .sort((a, b) => {
+      const aDate = a.claimDate?.getTime() ?? a.date?.getTime() ?? 0;
+      const bDate = b.claimDate?.getTime() ?? b.date?.getTime() ?? 0;
+      return aDate - bDate;
+    })
+    .map((line) => {
+      const po = takePurchaseOrder((candidates) =>
+        matchPurchaseOrderToPaymentLine(line, candidates)
+      );
+      const workflow = po
+        ? purchaseOrderWorkflowFields(po)
+        : {
+            poId: null,
+            claimDate: line.claimDate?.toISOString() ?? line.date?.toISOString() ?? null,
+            claimCertified: line.amountCertified,
+            poAmount: line.amountApproved,
+            sesDate: null,
+            invoiceDate: null,
+            eDispatchedDate: null,
+            eDispatchRef: null,
+            paidDate: null,
+          };
+
+      return purchaseOrderRecordBase(p, workflow, {
+        id: `payment-valuation-claim-${line.id}`,
+        claimSource: "payment-valuation",
+        joNo: null,
+        paymentDescription: line.description,
+      });
+    });
+
+  return [...jobOrderRows, ...paymentValuationRows].sort((a, b) => {
+    const aDate = a.claimDate ? new Date(a.claimDate).getTime() : 0;
+    const bDate = b.claimDate ? new Date(b.claimDate).getTime() : 0;
+    return aDate - bDate;
+  });
+}
+
 export function toContractMatterJobOrderRows(p: ProjectWithBudget): ContractMatterJobOrderRow[] {
   const base = contractMatterRecordBase(p);
 
@@ -234,35 +472,6 @@ export function toContractMatterJobOrderRows(p: ProjectWithBudget): ContractMatt
   }));
 }
 
-export function toContractMatterPurchaseOrderRows(
-  p: ProjectWithBudget
-): ContractMatterPurchaseOrderRow[] {
-  const base = contractMatterRecordBase(p);
-
-  return p.purchaseOrders.map((po) => ({
-    id: po.id,
-    contractAmount: base.quotationContractAmount,
-    claimDate: po.claimDate?.toISOString() ?? null,
-    claimCertified: po.claimCertified,
-    poAmount: po.poAmount,
-    sesDate: po.sesDate?.toISOString() ?? null,
-    invoiceDate: po.invoiceDate?.toISOString() ?? null,
-    eDispatchedDate: po.eDispatchedDate?.toISOString() ?? null,
-    paidDate: po.paidDate?.toISOString() ?? null,
-    projectId: base.projectId,
-    unit: base.unit,
-    title: base.title,
-    quotationNo: base.quotationNo,
-    contractNo: base.contractNo,
-    contractorName: base.contractorName,
-    lifecycleStage: base.lifecycleStage,
-    projectType: base.projectType,
-    vote: base.vote,
-    ministry: base.ministry,
-    department: base.department,
-  }));
-}
-
 export function toContractMatterRequestRow(r: MatterRequestRecord): ContractMatterRequestRow {
   return {
     id: r.id,
@@ -276,48 +485,4 @@ export function toContractMatterRequestRow(r: MatterRequestRecord): ContractMatt
     typeOfComplaint: r.typeOfComplaint,
     status: r.status,
   };
-}
-
-export function toPaymentMatterRows(projects: ProjectWithBudget[]): PaymentMatterRow[] {
-  const rows: PaymentMatterRow[] = [];
-
-  for (const p of projects) {
-    const paymentLines = p.budgetLines
-      .filter((l) => l.type === "payment")
-      .sort((a, b) => {
-        const da = a.date?.getTime() ?? 0;
-        const db = b.date?.getTime() ?? 0;
-        return da - db;
-      });
-
-    paymentLines.forEach((line, index) => {
-      const base = {
-        description: line.description,
-        amountApproved: line.amountApproved,
-        amountCertified: line.amountCertified,
-        voucherRef: line.voucherRef,
-      };
-
-      rows.push({
-        lineId: line.id,
-        projectId: p.id,
-        unit: getUnitLabel(p.section),
-        tenderNo: p.tendering?.tenderNo ?? null,
-        projectReference: p.quotationOrContractNo ?? p.contract?.contractNo ?? p.projectNumber,
-        projectTitle: p.title,
-        paymentNo: derivePaymentNo(line.description, index),
-        certifiedAmount: line.amountCertified,
-        contractorName: p.contractorName ?? p.contract?.mainContractor ?? null,
-        lifecycleStage: p.lifecycleStage,
-        projectType: p.projectType,
-        vote: p.design?.vote ?? null,
-        ministry: p.client?.ministry ?? null,
-        department: p.client?.department ?? null,
-        status: derivePaymentStatus(base),
-        processTab: derivePaymentProcessTab(base),
-      });
-    });
-  }
-
-  return rows;
 }

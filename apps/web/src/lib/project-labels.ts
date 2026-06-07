@@ -13,7 +13,7 @@ export const STAGE_STATUS_LABELS: Record<LifecycleStage, string> = {
   pre_contract: "Pre-Contract",
   contract: "Contract",
   ongoing: "Ongoing",
-  closed: "Closed",
+  closed: "Completed",
 };
 
 export const PROJECT_TAB_GROUPS = [

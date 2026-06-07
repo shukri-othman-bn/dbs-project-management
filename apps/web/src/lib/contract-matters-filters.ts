@@ -2,28 +2,6 @@ import { BudgetLineType, LifecycleStage, ProjectType } from "@prisma/client";
 import { PROJECT_TYPE_LABELS } from "./project-labels";
 import { STAGE_STATUS_LABELS } from "./project-labels";
 
-export const CONTRACT_MATTER_TABS = [
-  { id: "project", label: "Project" },
-  { id: "payment", label: "Payment" },
-  { id: "variation-order", label: "Variation Order" },
-  { id: "extension-of-time", label: "Extension of time" },
-  { id: "job-order", label: "Job Order" },
-  { id: "budget", label: "Budget" },
-  { id: "purchase-order", label: "Purchase Order" },
-  { id: "request", label: "Request" },
-] as const;
-
-export type ContractMatterTabId = (typeof CONTRACT_MATTER_TABS)[number]["id"];
-
-export const CONTRACT_MATTER_TAB_IDS = new Set(
-  CONTRACT_MATTER_TABS.map((t) => t.id)
-);
-
-export const DEFAULT_CONTRACT_MATTER_TAB: ContractMatterTabId = "project";
-
-/** Tabs that will show data once dedicated records exist in the system. */
-export const CONTRACT_MATTER_PLACEHOLDER_TABS = new Set<ContractMatterTabId>([]);
-
 export type ContractMatterProjectRow = {
   id: string;
   unit: string | null;
@@ -137,8 +115,30 @@ export type ContractMatterJobOrderRow = {
   department: string | null;
 };
 
+/** Payment/Claims table column widths — adjust widthPercent as needed. */
+export const PAYMENT_CLAIMS_TABLE_COLUMNS = [
+  { id: "unit", label: "Unit", widthPercent: 5 },
+  { id: "project", label: "Project", widthPercent: 13 },
+  { id: "quotationContractNo", label: "Quotation / contract no.", widthPercent: 11 },
+  { id: "contractor", label: "Contractor", widthPercent: 12 },
+  { id: "contractAmount", label: "Contract amount", widthPercent: 8 },
+  { id: "joPaymentDescription", label: "JO No/Payment Description", widthPercent: 8 },
+  { id: "claimDate", label: "Claim date", widthPercent: 6.375 },
+  { id: "claimCertified", label: "Claim certified", widthPercent: 8 },
+  { id: "poId", label: "PO ID", widthPercent: 8 },
+  { id: "poAmount", label: "PO amount", widthPercent: 8 },
+  { id: "sesDate", label: "SES date", widthPercent: 6.375 },
+  { id: "invoiceDate", label: "Invoice date", widthPercent: 6.375 },
+  { id: "eDispatchedDate", label: "E-dispatched date", widthPercent: 6.375 },
+  { id: "eDispatchRef", label: "E-Dispatch Ref", widthPercent: 8 },
+  { id: "paidDate", label: "Paid date", widthPercent: 6.375 },
+] as const;
+
+export type PaymentClaimSource = "job-order" | "payment-valuation";
+
 export type ContractMatterPurchaseOrderRow = {
   id: string;
+  claimSource?: PaymentClaimSource;
   projectId: string;
   unit: string | null;
   title: string;
@@ -146,12 +146,16 @@ export type ContractMatterPurchaseOrderRow = {
   contractNo: string | null;
   contractorName: string | null;
   contractAmount: number | null;
+  joNo: string | null;
+  paymentDescription: string | null;
   claimDate: string | null;
   claimCertified: number | null;
   poAmount: number;
+  poId: string | null;
   sesDate: string | null;
   invoiceDate: string | null;
   eDispatchedDate: string | null;
+  eDispatchRef: string | null;
   paidDate: string | null;
   lifecycleStage: LifecycleStage;
   projectType: ProjectType | null;
@@ -172,10 +176,6 @@ export type ContractMatterRequestRow = {
   typeOfComplaint: string | null;
   status: string | null;
 };
-
-export function getContractMatterTabLabel(tab: ContractMatterTabId) {
-  return CONTRACT_MATTER_TABS.find((t) => t.id === tab)?.label ?? tab;
-}
 
 export function projectMatchesContractMatterSearch(
   p: Pick<
@@ -506,6 +506,10 @@ export function filterPurchaseOrderRows(
         row.vote,
         row.ministry,
         row.department,
+        row.joNo,
+        row.paymentDescription,
+        row.poId,
+        row.eDispatchRef,
         row.projectType ? PROJECT_TYPE_LABELS[row.projectType] : null,
       ]
         .filter(Boolean)

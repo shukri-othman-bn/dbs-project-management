@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS } from "@/lib/budget";
+import { MASTER_LIST_VIEWS } from "@/lib/master-list-views";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["DIRECTOR", "HOS", "OFFICER", "ADMIN"] },
@@ -32,11 +33,7 @@ const navItems = [
   { href: "/admin", label: "Admin", icon: Settings, roles: ["ADMIN"] },
 ];
 
-const masterListChildren = [
-  { href: "/master-list/contract-matters", label: "Contract Matters" },
-  { href: "/master-list/payment-matters", label: "Payment Matters" },
-  { href: "/master-list/by-status", label: "By Status" },
-];
+const masterListChildren = MASTER_LIST_VIEWS.map(({ href, label }) => ({ href, label }));
 
 const reportsChildren = [
   { href: "/reports/statistics", label: "Statistics" },

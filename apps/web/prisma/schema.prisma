@@ -126,6 +126,8 @@ model Project {
   oicUserId             String?
   oic                   User?            @relation("ProjectOic", fields: [oicUserId], references: [id])
   design                ProjectDesign?
+  bca                   ProjectBca?
+  feasibility           ProjectFeasibility?
   tendering             ProjectTendering?
   contract              ContractDetails?
   completion            ProjectCompletion?
@@ -157,9 +159,39 @@ model ProjectDesign {
   estimate           Float?
   revisedEstimate    Float?
   svAmount           Float?
+  dateConfirmed              DateTime?
+  quotationTenderDueDate     DateTime?
+  actualQuotationTenderDate  DateTime?
   remarks            String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+}
+
+model ProjectBca {
+  id            String    @id @default(cuid())
+  projectId     String    @unique
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  dateAssigned  DateTime?
+  dateDue       DateTime?
+  dateCompleted DateTime?
+  estimate      Float?
+  letterDate    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model ProjectFeasibility {
+  id                String    @id @default(cuid())
+  projectId         String    @unique
+  project           Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  requestDate       DateTime?
+  siteInspection    DateTime?
+  estimate          Float?
+  proposedPeriod    String?
+  estimateSubmitted DateTime?
+  dateClientConfirm DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }
 
 model ProjectTendering {
@@ -170,6 +202,8 @@ model ProjectTendering {
   openDate                   DateTime?
   closingDate                DateTime?
   extendedClosingDate        DateTime?
+  receivedDate               DateTime?
+  assessmentSubmittedDate    DateTime?
   recommendationDate         DateTime?
   awardedDate                DateTime?
   approvedDate               DateTime?
@@ -195,7 +229,9 @@ model ContractDetails {
   contractStart         DateTime?
   contractFinish        DateTime?
   revisedContractFinish DateTime?
+  sitePossessionDate    DateTime?
   loaIssued             DateTime?
+  cncDate               DateTime?
   bgExpiry              DateTime?
   performanceBondExpiry DateTime?
   insuranceExpiry       DateTime?
@@ -327,12 +363,14 @@ model PurchaseOrder {
   id              String    @id @default(cuid())
   projectId       String
   project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  poId            String?
   claimDate       DateTime?
   claimCertified  Float?
   poAmount        Float     @default(0)
   sesDate         DateTime?
   invoiceDate     DateTime?
   eDispatchedDate DateTime?
+  eDispatchRef    String?
   paidDate        DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

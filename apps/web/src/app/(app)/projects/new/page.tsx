@@ -7,7 +7,7 @@ import { ProjectForm } from "@/components/projects/project-form";
 export default async function NewProjectPage() {
   const session = await auth();
   const user = session!.user;
-  if (!canCreateProject(user)) redirect("/master-list/by-status");
+  if (!canCreateProject(user)) redirect("/master-list/status");
 
   const [sections, clients, fundingTypes, officers, fy] = await Promise.all([
     prisma.section.findMany({ orderBy: { name: "asc" } }),
