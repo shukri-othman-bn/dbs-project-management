@@ -1,6 +1,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canEditProject } from "@/lib/permissions";
+import { syncProjectToFsor } from "@/lib/fsor-sync";
+import { syncFsorJobOrdersForProject } from "@/lib/fsor-jo-sync";
 import { NextResponse } from "next/server";
 
 export async function PATCH(
@@ -35,12 +37,18 @@ export async function PATCH(
       team: body.team || null,
       quotationOrContractNo: body.quotationOrContractNo || null,
       projectType: body.projectType || null,
+      contractCategory: body.contractCategory || null,
       contractorName: body.contractorName || null,
       supervisingOfficer: body.supervisingOfficer || null,
       architectName: body.architectName || null,
       clientsNotes: body.clientsNotes || null,
     },
   });
+
+  if (updated.contractCategory === "fsor") {
+    await syncProjectToFsor(id).catch(() => null);
+    await syncFsorJobOrdersForProject(id).catch(() => null);
+  }
 
   return NextResponse.json(updated);
 }

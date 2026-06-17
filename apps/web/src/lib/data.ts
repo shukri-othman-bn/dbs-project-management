@@ -171,6 +171,7 @@ export async function getProjectById(id: string) {
       feasibility: true,
       tendering: true,
       contract: true,
+      fsorConfig: true,
       completion: true,
       documents: true,
       budgets: fy
@@ -205,6 +206,11 @@ export async function ensureProjectRelations(projectId: string) {
       create: { projectId },
     }),
     prisma.projectDocuments.upsert({
+      where: { projectId },
+      update: {},
+      create: { projectId },
+    }),
+    prisma.projectFsorConfig.upsert({
       where: { projectId },
       update: {},
       create: { projectId },

@@ -4,6 +4,7 @@ import { ProjectTabForm } from "./project-tab-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusUpdateForm } from "./status-update-form";
 import { BudgetPanel } from "./budget-panel";
+import { ProjectFsorPanel } from "./project-fsor-panel";
 import type { BudgetTotals } from "@/lib/budget";
 import type { Prisma } from "@prisma/client";
 
@@ -15,6 +16,7 @@ type ProjectFull = Prisma.ProjectGetPayload<{
     design: true;
     tendering: true;
     contract: true;
+    fsorConfig: true;
     completion: true;
     documents: true;
     budgetLines: true;
@@ -32,6 +34,7 @@ export function ProjectTabsContent({
   encumbranceTotal,
   encumbranceBalance,
   financialYearId,
+  fsorAppUrl,
 }: {
   project: ProjectFull;
   tab: string;
@@ -41,6 +44,7 @@ export function ProjectTabsContent({
   encumbranceTotal: number;
   encumbranceBalance: number;
   financialYearId?: string;
+  fsorAppUrl: string;
 }) {
   const d = project.design;
   const t = project.tendering;
@@ -270,6 +274,30 @@ export function ProjectTabsContent({
             actionsRequired: comp?.actionsRequired ?? latest?.actionsRequired,
           }}
           canEdit={canEdit}
+        />
+      );
+
+    case "fsor":
+      return (
+        <ProjectFsorPanel
+          projectId={project.id}
+          fsorAppUrl={fsorAppUrl}
+          canEdit={canEdit}
+          defaultValues={{
+            defaultBidPercent: project.fsorConfig?.defaultBidPercent ?? 5,
+            pwdNo: project.fsorConfig?.pwdNo ?? "",
+            others: project.fsorConfig?.others ?? "",
+            soiRef: project.fsorConfig?.soiRef ?? project.quotationOrContractNo ?? "",
+            signatoryName: project.fsorConfig?.signatoryName ?? "",
+            signatoryTitle: project.fsorConfig?.signatoryTitle ?? "",
+            scopeDescription:
+              project.fsorConfig?.scopeDescription ??
+              project.contract?.remarks ??
+              project.clientsNotes ??
+              "",
+            buildings: (project.fsorConfig?.buildings ?? []).join("\n"),
+            lastSyncedAt: project.fsorConfig?.lastSyncedAt?.toISOString() ?? null,
+          }}
         />
       );
 

@@ -114,7 +114,7 @@ async function main() {
       role: Role.DIRECTOR,
     },
   });
-  const admin = await prisma.user.upsert({
+  const admin =   await prisma.user.upsert({
     where: { email: "admin@dbs.gov.bn" },
     update: {},
     create: {
@@ -122,6 +122,22 @@ async function main() {
       name: "System Admin",
       passwordHash,
       role: Role.ADMIN,
+    },
+  });
+
+  const projectAdminPasswordHash = await bcrypt.hash("ProjectAdmin2026!", 10);
+  const projectAdmin = await prisma.user.upsert({
+    where: { email: "projectadmin@dbs.gov.bn" },
+    update: {
+      name: "Project Admin",
+      role: Role.PROJECT_ADMIN,
+      passwordHash: projectAdminPasswordHash,
+    },
+    create: {
+      email: "projectadmin@dbs.gov.bn",
+      name: "Project Admin",
+      passwordHash: projectAdminPasswordHash,
+      role: Role.PROJECT_ADMIN,
     },
   });
 
@@ -1065,6 +1081,7 @@ async function main() {
   console.log("Login accounts (password: password123):");
   console.log("  Director:", director.email);
   console.log("  Admin:", admin.email);
+  console.log("  Project Admin:", projectAdmin.email, "(password: ProjectAdmin2026!)");
   for (let i = 0; i < UNIT_CODES.length; i++) {
     console.log(`  Officer ${i + 1} (${UNIT_CODES[i]}):`, `officer${i + 1}@dbs.gov.bn`);
   }

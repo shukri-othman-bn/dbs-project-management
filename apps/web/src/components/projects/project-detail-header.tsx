@@ -1,5 +1,5 @@
-import { LifecycleStage, ProjectType } from "@prisma/client";
-import { PROJECT_TYPE_LABELS } from "@/lib/project-labels";
+import { ContractCategory, LifecycleStage, ProjectType } from "@prisma/client";
+import { CONTRACT_CATEGORY_LABELS, PROJECT_TYPE_LABELS } from "@/lib/project-labels";
 import { StageBadge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -18,6 +18,7 @@ export function ProjectDetailHeader({
   quotationOrContractNo,
   lifecycleStage,
   projectType,
+  contractCategory,
   title,
   contractorName,
   oicName,
@@ -32,6 +33,7 @@ export function ProjectDetailHeader({
   quotationOrContractNo?: string | null;
   lifecycleStage: LifecycleStage;
   projectType?: ProjectType | null;
+  contractCategory?: ContractCategory | null;
   title: string;
   contractorName?: string | null;
   oicName?: string | null;
@@ -54,6 +56,11 @@ export function ProjectDetailHeader({
               {projectType && (
                 <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
                   {PROJECT_TYPE_LABELS[projectType]}
+                </span>
+              )}
+              {contractCategory && (
+                <span className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                  {CONTRACT_CATEGORY_LABELS[contractCategory]}
                 </span>
               )}
               {unit && (

@@ -9,9 +9,11 @@ import { Card, CardContent } from "@/components/ui/card";
 export function ProjectDetailNav({
   projectId,
   activeTab,
+  contractCategory,
 }: {
   projectId: string;
   activeTab: ProjectTabId;
+  contractCategory?: string | null;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -28,7 +30,9 @@ export function ProjectDetailNav({
     <Card className="h-fit">
       <CardContent className="p-3">
         <nav className="space-y-4" aria-label="Project sections">
-          {PROJECT_TAB_GROUPS.map((group) => {
+          {PROJECT_TAB_GROUPS.filter(
+            (group) => group.id !== "fsor" || contractCategory === "fsor"
+          ).map((group) => {
             const isGroupOpen =
               expandedGroup === group.id ||
               group.tabs.some((t) => t.id === activeTab);

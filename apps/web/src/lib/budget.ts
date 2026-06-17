@@ -84,5 +84,6 @@ export const ROLE_LABELS: Record<string, string> = {
   DIRECTOR: "Director",
   HOS: "Head of Section",
   OFFICER: "Officer",
+  PROJECT_ADMIN: "Project Admin",
   ADMIN: "Admin",
 };

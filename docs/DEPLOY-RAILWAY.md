@@ -85,8 +85,12 @@ Click the **GitHub repo service** → **Variables** tab (not under Settings):
 | `NEXTAUTH_URL` | Same as `AUTH_URL` |
 | `AUTH_TRUST_HOST` | `true` |
 | `NODE_ENV` | `production` |
+| `FSOR_SYNC_URL` | FSOR sync API base, e.g. `https://<your-fsor-domain>/api/v1` (set after FSOR is deployed — see FSOR app `docs/DEPLOY-RAILWAY.md`) |
+| `FSOR_APP_URL` | FSOR app base URL for deep links, e.g. `https://<your-fsor-domain>` |
 
 **Important:** After the first deploy, open **Settings → Networking → Generate Domain**, then set `AUTH_URL` and `NEXTAUTH_URL` to that HTTPS URL and **redeploy**.
+
+**FSOR integration:** Deploy FSOR as a second service in the same Railway project, then set `FSOR_SYNC_URL` and `FSOR_APP_URL` on this DPM service and redeploy. Without these, DPM cannot sync contracts or pull job orders from FSOR in production.
 
 ---
 
@@ -108,7 +112,26 @@ Click the **GitHub repo service** → **Variables** tab (not under Settings):
 
 ---
 
-## Step 6 — Turn off DigitalOcean
+## Step 6 — Add FSOR service (same Railway project)
+
+FSOR runs as a **second GitHub service** in this project. Full steps are in the FSOR repo: `docs/DEPLOY-RAILWAY.md`.
+
+Summary:
+
+1. **+ New** → **GitHub Repo** → select your **fsor-app** repo.
+2. FSOR service → **Volumes** → mount `/data`.
+3. FSOR service → **Variables:** `NODE_ENV=production`, `SYNC_STORE_PATH=/data/sync-store.json`.
+4. FSOR service → **Networking** → **Generate Domain** → copy HTTPS URL.
+5. **DPM service** → **Variables** → add:
+   - `FSOR_SYNC_URL` = `https://<fsor-domain>/api/v1`
+   - `FSOR_APP_URL` = `https://<fsor-domain>`
+6. **Redeploy DPM** after setting FSOR variables.
+
+Verify FSOR: `https://<fsor-domain>/api/health` → `{ "ok": true, "service": "fsor" }`.
+
+---
+
+## Step 7 — Turn off DigitalOcean
 
 Only after Railway health is OK:
 

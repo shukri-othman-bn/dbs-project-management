@@ -1,4 +1,9 @@
-import { LifecycleStage, ProjectType } from "@prisma/client";
+import { ContractCategory, LifecycleStage, ProjectType } from "@prisma/client";
+
+export const CONTRACT_CATEGORY_LABELS: Record<ContractCategory, string> = {
+  one_off_project: "One Off Project",
+  fsor: "FSOR",
+};
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   quotations: "Quotations",
@@ -43,6 +48,11 @@ export const PROJECT_TAB_GROUPS = [
       { id: "financials", label: "Financials" },
       { id: "status", label: "Status update" },
     ],
+  },
+  {
+    id: "fsor",
+    label: "FSOR",
+    tabs: [{ id: "fsor", label: "FSOR app" }],
   },
   {
     id: "records",

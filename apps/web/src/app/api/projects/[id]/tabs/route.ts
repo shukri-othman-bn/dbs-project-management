@@ -2,6 +2,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canEditProject } from "@/lib/permissions";
 import { ensureProjectRelations } from "@/lib/data";
+import { parseBuildings, syncProjectToFsor } from "@/lib/fsor-sync";
+import { syncFsorJobOrdersForProject } from "@/lib/fsor-jo-sync";
 import { ProjectType } from "@prisma/client";
 import { NextResponse } from "next/server";
 
@@ -177,9 +179,48 @@ export async function PATCH(
       });
       break;
     }
+    case "fsor": {
+      await prisma.projectFsorConfig.upsert({
+        where: { projectId: id },
+        update: {
+          defaultBidPercent: parseFloatOrNull(data.defaultBidPercent) ?? 5,
+          pwdNo: (data.pwdNo as string) || null,
+          others: (data.others as string) || null,
+          soiRef: (data.soiRef as string) || null,
+          signatoryName: (data.signatoryName as string) || null,
+          signatoryTitle: (data.signatoryTitle as string) || null,
+          scopeDescription: (data.scopeDescription as string) || null,
+          buildings: parseBuildings(data.buildings as string),
+        },
+        create: {
+          projectId: id,
+          defaultBidPercent: parseFloatOrNull(data.defaultBidPercent) ?? 5,
+          pwdNo: (data.pwdNo as string) || null,
+          others: (data.others as string) || null,
+          soiRef: (data.soiRef as string) || null,
+          signatoryName: (data.signatoryName as string) || null,
+          signatoryTitle: (data.signatoryTitle as string) || null,
+          scopeDescription: (data.scopeDescription as string) || null,
+          buildings: parseBuildings(data.buildings as string),
+        },
+      });
+      break;
+    }
     default:
       return NextResponse.json({ error: "Unknown tab" }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true });
+  const updatedProject = await prisma.project.findUnique({ where: { id } });
+  let fsorSync: { ok: boolean; error?: string; syncedAt?: string } | undefined;
+  if (updatedProject?.contractCategory === "fsor" && tab === "fsor") {
+    const result = await syncProjectToFsor(id);
+    fsorSync = result.ok
+      ? { ok: true, syncedAt: result.syncedAt }
+      : { ok: false, error: result.errors?.join(" ") ?? "Sync failed" };
+    if (result.ok) {
+      await syncFsorJobOrdersForProject(id).catch(() => null);
+    }
+  }
+
+  return NextResponse.json({ ok: true, fsorSync });
 }

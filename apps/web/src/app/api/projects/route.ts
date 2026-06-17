@@ -2,6 +2,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canCreateProject } from "@/lib/permissions";
 import { ensureProjectRelations } from "@/lib/data";
+import { syncProjectToFsor } from "@/lib/fsor-sync";
+import { syncFsorJobOrdersForProject } from "@/lib/fsor-jo-sync";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -25,12 +27,17 @@ export async function POST(req: Request) {
     financialYearId,
     quotationOrContractNo,
     projectType,
+    contractCategory,
     contractorName,
     supervisingOfficer,
   } = body;
 
   if (!projectNumber || !title) {
     return NextResponse.json({ error: "Project number and title required" }, { status: 400 });
+  }
+
+  if (!contractCategory) {
+    return NextResponse.json({ error: "Contract category required" }, { status: 400 });
   }
 
   const existing = await prisma.project.findUnique({ where: { projectNumber } });
@@ -51,6 +58,7 @@ export async function POST(req: Request) {
       team: team || null,
       quotationOrContractNo: quotationOrContractNo || projectNumber,
       projectType: projectType || null,
+      contractCategory: contractCategory || null,
       contractorName: contractorName || null,
       supervisingOfficer: supervisingOfficer || null,
     },
@@ -70,6 +78,11 @@ export async function POST(req: Request) {
         allocation: parseFloat(allocation) || 0,
       },
     });
+  }
+
+  if (project.contractCategory === "fsor") {
+    await syncProjectToFsor(project.id).catch(() => null);
+    await syncFsorJobOrdersForProject(project.id).catch(() => null);
   }
 
   return NextResponse.json(project);

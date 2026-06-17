@@ -48,6 +48,7 @@ export default async function EditProjectPage({
           allocation: budget?.allocation,
           quotationOrContractNo: project.quotationOrContractNo,
           projectType: project.projectType,
+          contractCategory: project.contractCategory,
           contractorName: project.contractorName,
           supervisingOfficer: project.supervisingOfficer,
         }}

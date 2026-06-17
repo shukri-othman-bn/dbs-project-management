@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormSaveActions, useFormDirty } from "@/components/ui/form-save-actions";
-import { STAGE_STATUS_LABELS } from "@/lib/project-labels";
+import { CONTRACT_CATEGORY_LABELS, STAGE_STATUS_LABELS } from "@/lib/project-labels";
 
 type Option = { id: string; name?: string; ministry?: string; department?: string | null };
 
@@ -42,6 +42,7 @@ export function ProjectForm({
     allocation?: number;
     quotationOrContractNo?: string | null;
     projectType?: string | null;
+    contractCategory?: string | null;
     contractorName?: string | null;
     supervisingOfficer?: string | null;
   };
@@ -124,6 +125,23 @@ export function ProjectForm({
               name="quotationOrContractNo"
               defaultValue={project?.quotationOrContractNo ?? project?.projectNumber}
             />
+          </div>
+          <div>
+            <Label htmlFor="contractCategory">Contract Category *</Label>
+            <select
+              id="contractCategory"
+              name="contractCategory"
+              defaultValue={project?.contractCategory ?? ""}
+              required
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            >
+              <option value="">— Select —</option>
+              {Object.entries(CONTRACT_CATEGORY_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <Label htmlFor="projectType">Project Type</Label>

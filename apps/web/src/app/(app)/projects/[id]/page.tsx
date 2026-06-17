@@ -8,6 +8,7 @@ import {
   type ProjectTabId,
 } from "@/lib/project-labels";
 import { getUnitLabel } from "@/lib/units";
+import { getFsorAppBaseUrl } from "@/lib/fsor-sync";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -37,6 +38,10 @@ export default async function ProjectDetailPage({
   const activeTab: ProjectTabId = PROJECT_TAB_IDS.has(tabParam as ProjectTabId)
     ? (tabParam as ProjectTabId)
     : DEFAULT_PROJECT_TAB;
+  const resolvedTab =
+    activeTab === "fsor" && project.contractCategory !== "fsor"
+      ? DEFAULT_PROJECT_TAB
+      : activeTab;
 
   const fy = await getCurrentFinancialYear();
   const budget = project.budgets[0];
@@ -82,6 +87,7 @@ export default async function ProjectDetailPage({
         quotationOrContractNo={project.quotationOrContractNo ?? project.projectNumber}
         lifecycleStage={project.lifecycleStage}
         projectType={project.projectType}
+        contractCategory={project.contractCategory}
         title={project.title}
         contractorName={project.contractorName ?? project.contract?.mainContractor}
         oicName={project.oic?.name}
@@ -94,19 +100,24 @@ export default async function ProjectDetailPage({
 
       <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
         <Suspense fallback={<div className="h-64 rounded-xl border border-slate-200 bg-white" />}>
-          <ProjectDetailNav projectId={id} activeTab={activeTab} />
+          <ProjectDetailNav
+            projectId={id}
+            activeTab={resolvedTab}
+            contractCategory={project.contractCategory}
+          />
         </Suspense>
 
         <div className="min-w-0">
           <ProjectTabsContent
             project={project}
-            tab={activeTab}
+            tab={resolvedTab}
             canEdit={canEdit}
             totals={totals}
             allocation={allocation}
             encumbranceTotal={budget?.encumbranceTotal ?? 0}
             encumbranceBalance={budget?.encumbranceBalance ?? 0}
             financialYearId={fy?.id}
+            fsorAppUrl={getFsorAppBaseUrl()}
           />
         </div>
       </div>

@@ -21,13 +21,13 @@ import { ROLE_LABELS } from "@/lib/budget";
 import { MASTER_LIST_VIEWS } from "@/lib/master-list-views";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["DIRECTOR", "HOS", "OFFICER", "ADMIN"] },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["DIRECTOR", "HOS", "OFFICER", "PROJECT_ADMIN", "ADMIN"] },
   { href: "/budget", label: "Budget", icon: Wallet, roles: ["DIRECTOR", "HOS", "ADMIN"] },
   {
     href: "/contractor-track-record",
     label: "Contractor Track Record",
     icon: ClipboardList,
-    roles: ["DIRECTOR", "HOS", "OFFICER", "ADMIN"],
+    roles: ["DIRECTOR", "HOS", "OFFICER", "PROJECT_ADMIN", "ADMIN"],
   },
   { href: "/export", label: "Export", icon: Download, roles: ["DIRECTOR", "ADMIN"] },
   { href: "/admin", label: "Admin", icon: Settings, roles: ["ADMIN"] },
@@ -67,8 +67,8 @@ export function SidebarPanel({
   }, [pathname]);
 
   const items = navItems.filter((item) => item.roles.includes(user.role));
-  const showMasterList = ["DIRECTOR", "HOS", "OFFICER", "ADMIN"].includes(user.role);
-  const showReports = ["DIRECTOR", "HOS", "OFFICER", "ADMIN"].includes(user.role);
+  const showMasterList = ["DIRECTOR", "HOS", "OFFICER", "PROJECT_ADMIN", "ADMIN"].includes(user.role);
+  const showReports = ["DIRECTOR", "HOS", "OFFICER", "PROJECT_ADMIN", "ADMIN"].includes(user.role);
   const masterActive = pathname.startsWith("/master-list");
   const reportsActive = pathname.startsWith("/reports");
 

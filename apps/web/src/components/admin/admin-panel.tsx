@@ -209,6 +209,7 @@ export function AdminPanel({
                 <Label>Role</Label>
                 <select name="role" className="w-full rounded-lg border px-3 py-2 text-sm">
                   <option value="OFFICER">Officer</option>
+                  <option value="PROJECT_ADMIN">Project Admin</option>
                   <option value="HOS">Head of Section</option>
                   <option value="DIRECTOR">Director</option>
                   <option value="ADMIN">Admin</option>

@@ -7,21 +7,29 @@ export type SessionUser = {
 };
 
 export function canViewAllProjects(user: SessionUser) {
-  return user.role === Role.DIRECTOR || user.role === Role.ADMIN;
+  return (
+    user.role === Role.DIRECTOR ||
+    user.role === Role.ADMIN ||
+    user.role === Role.PROJECT_ADMIN
+  );
 }
 
 export function canEditProject(
   user: SessionUser,
   project: { oicUserId: string | null; sectionId: string | null }
 ) {
-  if (user.role === Role.ADMIN) return true;
+  if (user.role === Role.ADMIN || user.role === Role.PROJECT_ADMIN) return true;
   if (user.role === Role.OFFICER && project.oicUserId === user.id) return true;
   if (user.role === Role.HOS && project.sectionId === user.sectionId) return true;
   return false;
 }
 
 export function canCreateProject(user: SessionUser) {
-  return user.role === Role.OFFICER || user.role === Role.ADMIN;
+  return (
+    user.role === Role.OFFICER ||
+    user.role === Role.PROJECT_ADMIN ||
+    user.role === Role.ADMIN
+  );
 }
 
 export function canAccessAdmin(user: SessionUser) {

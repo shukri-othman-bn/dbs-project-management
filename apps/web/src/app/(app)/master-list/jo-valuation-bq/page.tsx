@@ -5,12 +5,14 @@ import {
   toContractMatterLineRows,
   toContractMatterProjectRow,
 } from "@/lib/master-list-mappers";
+import { syncAllFsorJobOrders } from "@/lib/fsor-jo-sync";
 import { JoPaymentValuationList } from "@/components/master-list/jo-payment-valuation-list";
 import { MasterListHeader, MasterListViewPills } from "@/components/master-list/master-list-header";
 
 export default async function MasterListJoValuationBqPage() {
   const session = await auth();
   const user = session!.user;
+  await syncAllFsorJobOrders().catch(() => null);
   const raw = await getProjectsWithBudget(user);
   const projects = raw.map(toContractMatterProjectRow);
   const lines = raw.flatMap(toContractMatterLineRows);

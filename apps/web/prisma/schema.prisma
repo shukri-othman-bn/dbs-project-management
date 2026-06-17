@@ -11,6 +11,7 @@ enum Role {
   DIRECTOR
   HOS
   OFFICER
+  PROJECT_ADMIN
   ADMIN
 }
 
@@ -28,6 +29,11 @@ enum ProjectType {
   consultancy
   maintenance
   other
+}
+
+enum ContractCategory {
+  one_off_project
+  fsor
 }
 
 enum BudgetLineType {
@@ -109,6 +115,7 @@ model Project {
   title                 String
   lifecycleStage        LifecycleStage   @default(planning)
   projectType           ProjectType?
+  contractCategory      ContractCategory?
   quotationOrContractNo String?
   internalProjectNo     String?
   toMonitor             Boolean          @default(false)
@@ -130,6 +137,7 @@ model Project {
   feasibility           ProjectFeasibility?
   tendering             ProjectTendering?
   contract              ContractDetails?
+  fsorConfig            ProjectFsorConfig?
   completion            ProjectCompletion?
   documents             ProjectDocuments?
   statusUpdates         StatusUpdate[]
@@ -246,6 +254,23 @@ model ContractDetails {
   updatedAt             DateTime  @updatedAt
 }
 
+model ProjectFsorConfig {
+  id                String    @id @default(cuid())
+  projectId         String    @unique
+  project           Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  defaultBidPercent Float     @default(5)
+  pwdNo             String?
+  others            String?
+  soiRef            String?
+  signatoryName     String?
+  signatoryTitle    String?
+  scopeDescription  String?
+  buildings         String[]
+  lastSyncedAt      DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
 model ProjectCompletion {
   id                  String    @id @default(cuid())
   projectId           String    @unique
@@ -309,6 +334,7 @@ model BudgetLine {
   projectId       String
   project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   financialYearId String?
+  fsorJoId        String?        @unique
   type            BudgetLineType
   date            DateTime?
   claimDate       DateTime?
@@ -348,6 +374,9 @@ model JobOrder {
   id              String    @id @default(cuid())
   projectId       String
   project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fsorJoId        String?   @unique
+  fsorStatus      String?
+  fsorSyncedAt    DateTime?
   joNo            String?
   joAmount        Float     @default(0)
   fsorPercent     Float?
