@@ -13,6 +13,7 @@
     "start": "cd apps/web && npm run start",
     "db:push": "npm run db:push --prefix apps/web",
     "db:seed": "npm run db:seed --prefix apps/web",
+    "db:deploy": "cd apps/web && npm run db:deploy",
     "db:studio": "npm run db:studio --prefix apps/web"
   }
 }

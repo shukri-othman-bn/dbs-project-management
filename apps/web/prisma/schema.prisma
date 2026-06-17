@@ -11,8 +11,8 @@ enum Role {
   DIRECTOR
   HOS
   OFFICER
-  PROJECT_ADMIN
   ADMIN
+  PROJECT_ADMIN
 }
 
 enum LifecycleStage {
