@@ -748,31 +748,44 @@ async function main() {
     const sectionId = units[unitCode].id;
     const slug = unitCode.toLowerCase();
 
+    const seedProject = projectData as {
+      projectNumber: string;
+      title: string;
+      lifecycleStage: string;
+      clientId: string;
+      fundingTypeId: string;
+      toMonitor: boolean;
+      oicName?: string;
+      oicEmail?: string;
+      quotationOrContractNo?: string;
+      projectType?: string;
+      contractorName?: string;
+    };
+    const oicName = seedProject.oicName ?? `Project Officer (${unitCode})`;
+    const oicEmail = seedProject.oicEmail ?? `oic.${slug}@dbs.gov.bn`;
+
     const project = await prisma.project.upsert({
-      where: { projectNumber: projectData.projectNumber },
+      where: { projectNumber: seedProject.projectNumber },
       update: {
-        title: projectData.title,
+        title: seedProject.title,
         lifecycleStage: projectData.lifecycleStage,
         sectionId,
-        clientId: projectData.clientId,
-        fundingTypeId: projectData.fundingTypeId,
+        clientId: seedProject.clientId,
+        fundingTypeId: seedProject.fundingTypeId,
         oicUserId: null,
-        oicName: projectData.oicName ?? `Project Officer (${unitCode})`,
-        oicEmail: projectData.oicEmail ?? `oic.${slug}@dbs.gov.bn`,
-        toMonitor: projectData.toMonitor,
-        quotationOrContractNo: projectData.quotationOrContractNo,
-        projectType: projectData.projectType,
-        contractorName:
-          "contractorName" in projectData
-            ? (projectData as { contractorName?: string }).contractorName
-            : undefined,
+        oicName,
+        oicEmail,
+        toMonitor: seedProject.toMonitor,
+        quotationOrContractNo: seedProject.quotationOrContractNo,
+        projectType: seedProject.projectType,
+        contractorName: seedProject.contractorName,
       },
       create: {
         ...projectData,
         sectionId,
         oicUserId: null,
-        oicName: projectData.oicName ?? `Project Officer (${unitCode})`,
-        oicEmail: projectData.oicEmail ?? `oic.${slug}@dbs.gov.bn`,
+        oicName,
+        oicEmail,
       },
     });
 
