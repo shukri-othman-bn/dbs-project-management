@@ -38,7 +38,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="items-center space-y-4 text-center">
-          <AppLogo showSubtitle={false} imageClassName="max-w-[240px]" />
+          <AppLogo showSubtitle={false} imageClassName="max-w-[480px]" />
           <div>
             <CardTitle>DBS Project Management</CardTitle>
             <p className="mt-1 text-sm text-slate-500">Sign in to access your department dashboard</p>

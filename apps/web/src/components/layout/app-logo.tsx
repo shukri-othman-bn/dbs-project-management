@@ -19,10 +19,10 @@ export function AppLogo({
       <img
         src={LOGO_SRC}
         alt="DBS — Department of Building Services"
-        width={200}
-        height={80}
+        width={400}
+        height={160}
         decoding="async"
-        className={cn("h-auto w-full max-w-[200px] object-contain", imageClassName)}
+        className={cn("h-auto w-full max-w-[400px] object-contain", imageClassName)}
       />
       {showSubtitle && (
         <p className="mt-2 text-xs text-slate-400">{subtitle}</p>
@@ -41,10 +41,10 @@ export function AppLogoCompact({
     <img
       src={LOGO_SRC}
       alt="DBS — Department of Building Services"
-      width={140}
-      height={56}
+      width={280}
+      height={112}
       decoding="async"
-      className={cn("h-10 w-auto object-contain", className)}
+      className={cn("h-20 w-auto object-contain", className)}
     />
   );
 }
