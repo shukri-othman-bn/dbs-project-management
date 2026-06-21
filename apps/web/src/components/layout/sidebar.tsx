@@ -80,7 +80,7 @@ export function SidebarPanel({
   return (
     <aside className={cn(sidebarAsideClass, className)}>
       <div className="border-b border-slate-700 px-4 py-5">
-        <AppLogo showSubtitle subtitle="Project Management" priority />
+        <AppLogo showSubtitle subtitle="Project Management" />
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {items.slice(0, 1).map((item) => {

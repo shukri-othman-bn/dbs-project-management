@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   description: "Department project and budget monitoring platform",
   icons: {
     icon: "/dbs-logo.png",
+    apple: "/dbs-logo.png",
   },
 };
 

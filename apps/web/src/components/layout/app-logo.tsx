@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 const LOGO_SRC = "/dbs-logo.png";
@@ -8,22 +7,21 @@ export function AppLogo({
   imageClassName,
   showSubtitle = true,
   subtitle = "Department Management",
-  priority = false,
 }: {
   className?: string;
   imageClassName?: string;
   showSubtitle?: boolean;
   subtitle?: string;
-  priority?: boolean;
 }) {
   return (
     <div className={cn("flex flex-col items-center text-center", className)}>
-      <Image
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         src={LOGO_SRC}
         alt="DBS — Department of Building Services"
         width={200}
         height={80}
-        priority={priority}
+        decoding="async"
         className={cn("h-auto w-full max-w-[200px] object-contain", imageClassName)}
       />
       {showSubtitle && (
@@ -35,18 +33,17 @@ export function AppLogo({
 
 export function AppLogoCompact({
   className,
-  priority = false,
 }: {
   className?: string;
-  priority?: boolean;
 }) {
   return (
-    <Image
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
       src={LOGO_SRC}
       alt="DBS — Department of Building Services"
       width={140}
       height={56}
-      priority={priority}
+      decoding="async"
       className={cn("h-10 w-auto object-contain", className)}
     />
   );
