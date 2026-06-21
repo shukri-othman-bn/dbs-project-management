@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RagBadge } from "@/components/ui/badge";
 import { ReportsHeader, ReportsViewPills } from "@/components/reports/reports-header";
 import { SpendPieChart } from "@/components/charts/spend-pie-chart";
+import { fundingTypeLabel } from "@/lib/funding-types";
 import Link from "next/link";
 import { getUnitLabel } from "@/lib/units";
 import {
@@ -21,7 +22,7 @@ export default async function ExpenditureReportPage() {
   const session = await auth();
   const user = session!.user;
   const fy = await getCurrentFinancialYear();
-  const { projects, totals } = await getDepartmentBudgetSummary(user);
+  const { projects, totals, byFundingType } = await getDepartmentBudgetSummary(user);
 
   const utilization =
     totals.allocation > 0 ? (totals.spent / totals.allocation) * 100 : 0;
@@ -32,13 +33,7 @@ export default async function ExpenditureReportPage() {
     { name: "Unspent", value: Math.max(0, unspent) },
   ];
 
-  const fundingBreakdown: Record<string, { allocation: number; spent: number }> = {};
-  for (const p of projects) {
-    const key = p.fundingType?.name ?? "Unspecified";
-    if (!fundingBreakdown[key]) fundingBreakdown[key] = { allocation: 0, spent: 0 };
-    fundingBreakdown[key].allocation += p.totals.allocation;
-    fundingBreakdown[key].spent += p.totals.paymentsCertified;
-  }
+  const fundingBreakdown = byFundingType;
 
   return (
     <div className="space-y-6">
@@ -91,11 +86,13 @@ export default async function ExpenditureReportPage() {
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
-              {Object.entries(fundingBreakdown).map(([name, data]) => (
-                <li key={name} className="flex justify-between text-sm border-b pb-2">
-                  <span>{name}</span>
+              {fundingBreakdown.map((row) => (
+                <li key={row.code} className="flex justify-between gap-4 text-sm border-b pb-2">
                   <span>
-                    {formatCurrency(data.spent)} / {formatCurrency(data.allocation)}
+                    {row.code} · {fundingTypeLabel(row.name)}
+                  </span>
+                  <span className="text-right">
+                    {formatCurrency(row.spent)} / {formatCurrency(row.amountApproved)}
                   </span>
                 </li>
               ))}

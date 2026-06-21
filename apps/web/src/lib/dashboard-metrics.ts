@@ -2,13 +2,14 @@ import { LifecycleStage } from "@prisma/client";
 import { RagStatus } from "./budget";
 
 export const ACTIVE_LIFECYCLE_STAGES = [
-  "pre_contract",
-  "contract",
+  "pre_design",
+  "design",
+  "quotation_tender",
   "ongoing",
 ] as const satisfies readonly LifecycleStage[];
 
 export const DASHBOARD_METRIC_DEFINITIONS = {
-  activeProjects: "Pre-Contract, Contract & Ongoing",
+  activeProjects: "Pre-Design, Design, Quotation/Tender & On-Going",
   needsAttention: "FY spend behind pace (amber or red)",
 } as const;
 

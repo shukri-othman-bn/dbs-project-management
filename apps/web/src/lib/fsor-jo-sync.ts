@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { getFsorSyncBaseUrl, type FsorSyncState } from "@/lib/fsor-sync";
+import { nextProgressClaimNo } from "@/lib/payment-valuation";
+import {
+  syncPurchaseOrderForPaymentLine,
+  WarrantInsufficientError,
+} from "@/lib/purchase-order-sync";
 
 export type FsorJobOrder = {
   id: string;
@@ -29,12 +34,6 @@ function formatJoNo(jo: FsorJobOrder): string {
   return jo.id.slice(0, 8);
 }
 
-function buildPaymentDescription(jo: FsorJobOrder): string {
-  const no = jo.instructionNo ? `JO ${jo.instructionNo}` : "JO";
-  const building = jo.buildingName ? ` — ${jo.buildingName}` : "";
-  return `FSOR ${no}${building}`;
-}
-
 export async function fetchFsorSyncState(): Promise<FsorSyncState | null> {
   try {
     const res = await fetch(`${getFsorSyncBaseUrl()}/state`, {
@@ -52,38 +51,56 @@ export async function fetchFsorSyncState(): Promise<FsorSyncState | null> {
 async function ensurePaymentValuationLine(projectId: string, fsorJo: FsorJobOrder) {
   const amount = Number(fsorJo.grandTotal) || 0;
   const claimDate = parseIsoDate(fsorJo.issuedAt);
-  const description = buildPaymentDescription(fsorJo);
 
   const existing = await prisma.budgetLine.findUnique({
     where: { fsorJoId: fsorJo.id },
   });
 
   if (existing) {
-    await prisma.budgetLine.update({
+    const line = await prisma.budgetLine.update({
       where: { id: existing.id },
       data: {
         claimDate,
         date: claimDate,
         amountCertified: amount,
         amountApproved: amount,
-        description,
+        description: null,
       },
     });
+    try {
+      await syncPurchaseOrderForPaymentLine(line);
+    } catch (error) {
+      if (!(error instanceof WarrantInsufficientError)) throw error;
+      console.warn(
+        `FSOR sync: insufficient warrant for payment line ${line.id} on project ${projectId}`
+      );
+    }
     return;
   }
 
-  await prisma.budgetLine.create({
+  const progressClaimNo = await nextProgressClaimNo(projectId);
+
+  const line = await prisma.budgetLine.create({
     data: {
       projectId,
       fsorJoId: fsorJo.id,
       type: "payment",
       claimDate,
       date: claimDate,
+      progressClaimNo,
       amountCertified: amount,
       amountApproved: amount,
-      description,
     },
   });
+
+  try {
+    await syncPurchaseOrderForPaymentLine(line);
+  } catch (error) {
+    if (!(error instanceof WarrantInsufficientError)) throw error;
+    console.warn(
+      `FSOR sync: insufficient warrant for payment line ${line.id} on project ${projectId}`
+    );
+  }
 }
 
 async function upsertDpmJobOrderFromFsor(

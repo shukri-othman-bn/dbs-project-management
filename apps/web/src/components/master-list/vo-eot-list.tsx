@@ -38,7 +38,7 @@ export function VoEotList({
   const [filters, setFilters] = useState<MasterListFilterState>({
     search: "",
     unit: "",
-    vote: "",
+    fundingType: "",
     contractor: "",
     projectType: "",
     projectStatus: "",
@@ -82,7 +82,7 @@ export function VoEotList({
           options={filterOptions}
           onSearchChange={(search) => patchFilters({ search })}
           onUnitChange={(unit) => patchFilters({ unit })}
-          onVoteChange={(vote) => patchFilters({ vote })}
+          onFundingTypeChange={(fundingType) => patchFilters({ fundingType })}
           onContractorChange={(contractor) => patchFilters({ contractor })}
           onProjectTypeChange={(projectType) => patchFilters({ projectType })}
           onProjectStatusChange={(projectStatus) => patchFilters({ projectStatus })}

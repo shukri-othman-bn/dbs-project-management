@@ -39,7 +39,7 @@ export default async function TenderStatusReportPage() {
   });
 
   const openCount = tenders.filter(
-    (p) => p.lifecycleStage === "pre_contract" && !p.tendering?.awardedDate
+    (p) => p.lifecycleStage === "quotation_tender" && !p.tendering?.awardedDate
   ).length;
   const awardedCount = tenders.filter((p) => p.tendering?.awardedDate).length;
 

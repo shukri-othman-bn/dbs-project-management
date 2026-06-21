@@ -32,15 +32,15 @@ export function sumPayments(lines: { type: string; amountApproved: number; amoun
 export function computeBudgetTotals(input: {
   allocation: number;
   encumbranceTotal: number;
-  encumbranceBalance: number;
   budgetLines: { type: string; amountApproved: number; amountCertified: number | null; amountBalance: number | null }[];
   fyStart?: Date;
   fyEnd?: Date;
 }): BudgetTotals {
-  const { allocation, encumbranceTotal, encumbranceBalance, budgetLines, fyStart, fyEnd } = input;
+  const { allocation, encumbranceTotal, budgetLines, fyStart, fyEnd } = input;
   const warrant = sumWarrant(budgetLines);
   const payment = sumPayments(budgetLines);
   const paymentsCertified = payment.certified;
+  const encumbranceBalance = encumbranceTotal - paymentsCertified;
   const utilizationPct = allocation > 0 ? (paymentsCertified / allocation) * 100 : 0;
   const unspent = allocation - paymentsCertified;
 
@@ -73,16 +73,17 @@ export function computeBudgetTotals(input: {
 }
 
 export const STAGE_LABELS: Record<string, string> = {
-  planning: "Feasibility Study",
-  pre_contract: "Pre-Contract",
-  contract: "Contract",
-  ongoing: "Ongoing",
-  closed: "Closed",
+  pre_design: "Pre-Design",
+  design: "Design",
+  quotation_tender: "Quotation/Tender",
+  ongoing: "On-Going",
+  completed: "Completed",
+  keep_in_view: "Keep In View",
 };
 
 export const ROLE_LABELS: Record<string, string> = {
   DIRECTOR: "Director",
-  HOS: "Head of Section",
+  HOS: "Head of Unit",
   OFFICER: "Officer",
   PROJECT_ADMIN: "Project Admin",
   ADMIN: "Admin",

@@ -11,7 +11,7 @@ export { countActiveMasterListFilters, EMPTY_MASTER_LIST_FILTERS } from "@/lib/m
 
 export type MasterListFilterOptions = {
   units: string[];
-  votes: string[];
+  fundingTypes: string[];
   contractors: string[];
   projectTypes: ProjectType[];
   statuses: string[];
@@ -53,7 +53,7 @@ export function MasterListFiltersBar({
   options,
   onSearchChange,
   onUnitChange,
-  onVoteChange,
+  onFundingTypeChange,
   onContractorChange,
   onProjectTypeChange,
   onProjectStatusChange,
@@ -64,7 +64,7 @@ export function MasterListFiltersBar({
   options: MasterListFilterOptions;
   onSearchChange: (value: string) => void;
   onUnitChange: (value: string) => void;
-  onVoteChange: (value: string) => void;
+  onFundingTypeChange: (value: string) => void;
   onContractorChange: (value: string) => void;
   onProjectTypeChange: (value: string) => void;
   onProjectStatusChange: (value: string) => void;
@@ -84,7 +84,7 @@ export function MasterListFiltersBar({
       </div>
       <div className="flex flex-wrap gap-3">
         <FilterSelect label="Unit" value={filters.unit} onChange={onUnitChange} options={options.units} />
-        <FilterSelect label="Vote" value={filters.vote} onChange={onVoteChange} options={options.votes} />
+        <FilterSelect label="Funding Type" value={filters.fundingType} onChange={onFundingTypeChange} options={options.fundingTypes} />
         <FilterSelect
           label="Contractor"
           value={filters.contractor}

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { canEditProject } from "@/lib/permissions";
 import { syncProjectToFsor } from "@/lib/fsor-sync";
 import { syncFsorJobOrdersForProject } from "@/lib/fsor-jo-sync";
+import { resolveClientId } from "@/lib/clients";
 import { NextResponse } from "next/server";
 
 export async function PATCH(
@@ -24,24 +25,23 @@ export async function PATCH(
   }
 
   const body = await req.json();
+  const clientId = await resolveClientId(body.clientMinistry, body.clientDepartment);
+
   const updated = await prisma.project.update({
     where: { id },
     data: {
       title: body.title,
       lifecycleStage: body.lifecycleStage,
       sectionId: body.sectionId || null,
-      clientId: body.clientId || null,
+      clientId,
       fundingTypeId: body.fundingTypeId || null,
-      oicUserId: body.oicUserId || null,
+      oicUserId: null,
+      oicName: body.oicName?.trim() || null,
+      oicEmail: body.oicEmail?.trim() || null,
       toMonitor: !!body.toMonitor,
-      team: body.team || null,
       quotationOrContractNo: body.quotationOrContractNo || null,
       projectType: body.projectType || null,
       contractCategory: body.contractCategory || null,
-      contractorName: body.contractorName || null,
-      supervisingOfficer: body.supervisingOfficer || null,
-      architectName: body.architectName || null,
-      clientsNotes: body.clientsNotes || null,
     },
   });
 

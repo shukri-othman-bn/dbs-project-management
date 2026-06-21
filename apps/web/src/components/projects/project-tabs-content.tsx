@@ -2,10 +2,14 @@ import { formatCurrency, formatDate, formatPercent } from "@/lib/utils";
 import { toInputDate } from "@/lib/format-input";
 import { ProjectTabForm } from "./project-tab-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatusUpdateForm } from "./status-update-form";
+import { FinancialProgressPanel, PhysicalProgressPanel } from "./progress-panels";
 import { BudgetPanel } from "./budget-panel";
+import { ProjectPaymentValuationPanel } from "./project-payment-valuation-panel";
 import { ProjectFsorPanel } from "./project-fsor-panel";
+import { ProjectVariationOrdersPanel } from "./project-variation-orders-panel";
+import { ProjectExtensionOfTimePanel } from "./project-extension-of-time-panel";
 import type { BudgetTotals } from "@/lib/budget";
+import type { UnitBudgetMetrics } from "@/lib/data";
 import type { Prisma } from "@prisma/client";
 
 type ProjectFull = Prisma.ProjectGetPayload<{
@@ -20,6 +24,9 @@ type ProjectFull = Prisma.ProjectGetPayload<{
     completion: true;
     documents: true;
     budgetLines: true;
+    purchaseOrders: { include: { budgetLine: true } };
+    variationOrders: true;
+    extensionOfTimes: true;
     statusUpdates: true;
     budgets: { include: { financialYear: true } };
   };
@@ -30,9 +37,7 @@ export function ProjectTabsContent({
   tab,
   canEdit,
   totals,
-  allocation,
-  encumbranceTotal,
-  encumbranceBalance,
+  unitBudget,
   financialYearId,
   fsorAppUrl,
 }: {
@@ -40,9 +45,7 @@ export function ProjectTabsContent({
   tab: string;
   canEdit: boolean;
   totals: BudgetTotals;
-  allocation: number;
-  encumbranceTotal: number;
-  encumbranceBalance: number;
+  unitBudget: UnitBudgetMetrics | null;
   financialYearId?: string;
   fsorAppUrl: string;
 }) {
@@ -61,31 +64,23 @@ export function ProjectTabsContent({
             projectId={project.id}
             tab="design"
             fields={[
-              { name: "vote", label: "Vote" },
-              { name: "govtEstimate", label: "Govt Est", type: "number" },
-              { name: "contractPeriod", label: "Contract period" },
+              { name: "preliminaryEstimate", label: "Preliminary estimate", type: "number" },
               { name: "designProjectNo", label: "Project no" },
               { name: "designProgressAsOf", label: "Design progress as of", type: "date" },
-              { name: "archProgress", label: "ARCH %", type: "number" },
-              { name: "qsProgress", label: "QS %", type: "number" },
-              { name: "steProgress", label: "STE %", type: "number" },
-              { name: "meProgress", label: "M&E %", type: "number" },
-              { name: "estimate", label: "Estimate", type: "number" },
-              { name: "svAmount", label: "SV Amount", type: "number" },
+              { name: "dateDrawingsCompleted", label: "Date drawings completed", type: "date" },
+              { name: "dateMeBqReceived", label: "Date M&E BQ received", type: "date" },
+              { name: "dateBqCompleted", label: "Date BQ completed", type: "date" },
+              { name: "dateOtherDocumentsReceived", label: "Date other documents received", type: "date" },
               { name: "remarks", label: "Remarks", type: "textarea", colSpan: 3 },
             ]}
             defaultValues={{
-              vote: d?.vote,
-              govtEstimate: d?.govtEstimate,
-              contractPeriod: d?.contractPeriod,
+              preliminaryEstimate: d?.preliminaryEstimate,
               designProjectNo: d?.designProjectNo ?? project.internalProjectNo,
               designProgressAsOf: toInputDate(d?.designProgressAsOf),
-              archProgress: d?.archProgress,
-              qsProgress: d?.qsProgress,
-              steProgress: d?.steProgress,
-              meProgress: d?.meProgress,
-              estimate: d?.estimate,
-              svAmount: d?.svAmount,
+              dateDrawingsCompleted: toInputDate(d?.dateDrawingsCompleted),
+              dateMeBqReceived: toInputDate(d?.dateMeBqReceived),
+              dateBqCompleted: toInputDate(d?.dateBqCompleted),
+              dateOtherDocumentsReceived: toInputDate(d?.dateOtherDocumentsReceived),
               remarks: d?.remarks,
             }}
             canEdit={canEdit}
@@ -102,30 +97,42 @@ export function ProjectTabsContent({
             title="Tendering Details"
             fields={[
               { name: "tenderNo", label: "Tender no" },
-              { name: "openDate", label: "Open date", type: "date" },
-              { name: "closingDate", label: "Closing date", type: "date" },
-              { name: "extendedClosingDate", label: "Extended closing date", type: "date" },
-              { name: "recommendationDate", label: "Recommendation date", type: "date" },
-              { name: "awardedDate", label: "Awarded date", type: "date" },
-              { name: "approvedDate", label: "Approved date", type: "date" },
+              { name: "receivedDate", label: "Documents received date", type: "date" },
               { name: "loaDate", label: "LOA date", type: "date" },
+              { name: "openDate", label: "Open date", type: "date" },
+              {
+                name: "recommendationDate",
+                label: "Recommendation submitted to DBSO date",
+                type: "date",
+              },
               { name: "startDateInLoa", label: "Start Date in LOA", type: "date" },
+              { name: "closingDate", label: "Closing date", type: "date" },
+              {
+                name: "recommendationFromDbsoDate",
+                label: "Recommendation submitted from DBSO",
+                type: "date",
+              },
               { name: "completeDateInLoa", label: "Complete Date in LOA", type: "date" },
+              { name: "extendedClosingDate", label: "Extended closing date", type: "date" },
+              { name: "approvedDate", label: "Approved date", type: "date" },
+              { name: "completionPeriod", label: "Completion period" },
               { name: "adRemarks", label: "Ad remarks", type: "textarea", colSpan: 3 },
               { name: "tenderValidityRemarks", label: "Tender Validity Remarks", type: "textarea", colSpan: 3 },
               { name: "latestQuotationValidityDate", label: "Latest Quotation / Tender Validity Date", type: "date" },
             ]}
             defaultValues={{
               tenderNo: t?.tenderNo ?? project.quotationOrContractNo,
-              openDate: toInputDate(t?.openDate),
-              closingDate: toInputDate(t?.closingDate),
-              extendedClosingDate: toInputDate(t?.extendedClosingDate),
-              recommendationDate: toInputDate(t?.recommendationDate),
-              awardedDate: toInputDate(t?.awardedDate),
-              approvedDate: toInputDate(t?.approvedDate),
+              receivedDate: toInputDate(t?.receivedDate),
               loaDate: toInputDate(t?.loaDate),
+              openDate: toInputDate(t?.openDate),
+              recommendationDate: toInputDate(t?.recommendationDate),
               startDateInLoa: toInputDate(t?.startDateInLoa),
+              closingDate: toInputDate(t?.closingDate),
+              recommendationFromDbsoDate: toInputDate(t?.recommendationFromDbsoDate),
               completeDateInLoa: toInputDate(t?.completeDateInLoa),
+              extendedClosingDate: toInputDate(t?.extendedClosingDate),
+              approvedDate: toInputDate(t?.approvedDate),
+              completionPeriod: t?.completionPeriod ?? c?.contractPeriod,
               adRemarks: t?.adRemarks,
               tenderValidityRemarks: t?.tenderValidityRemarks,
               latestQuotationValidityDate: toInputDate(t?.latestQuotationValidityDate),
@@ -166,7 +173,7 @@ export function ProjectTabsContent({
           defaultValues={{
             mainContractor: c?.mainContractor ?? project.contractorName,
             contractNo: c?.contractNo,
-            contractPeriod: c?.contractPeriod ?? d?.contractPeriod,
+            contractPeriod: c?.contractPeriod ?? t?.completionPeriod,
             remarks: c?.remarks,
           }}
           canEdit={canEdit}
@@ -179,30 +186,36 @@ export function ProjectTabsContent({
           projectId={project.id}
           tab="contract-dates"
           fields={[
-            { name: "contractStart", label: "Contract Start", type: "date" },
-            { name: "contractFinish", label: "Contract Finish", type: "date" },
-            { name: "revisedContractFinish", label: "Revised Contract Finish", type: "date" },
-            { name: "contractSigned", label: "Contract Signed", type: "date" },
-            { name: "loaIssued", label: "LOA Issued", type: "date" },
-            { name: "bgExpiry", label: "BG Expiry", type: "date" },
-            { name: "performanceBondExpiry", label: "Performance Bond Expiry", type: "date" },
-            { name: "insuranceExpiry", label: "Insurance Expiry", type: "date" },
-            { name: "cpcDate", label: "CPC Date", type: "date" },
-            { name: "cpcIssued", label: "CPC Issued", type: "date" },
-            { name: "edlp", label: "EDLP", type: "date" },
+            { name: "loaIssued", label: "LOA date", type: "date" },
+            { name: "contractStart", label: "Contract start date", type: "date" },
+            { name: "sitePossessionDate", label: "Site possession date", type: "date" },
+            { name: "bgStartDate", label: "BG start date", type: "date" },
+            { name: "contractFinish", label: "Contract finish", type: "date" },
+            { name: "cpcIssued", label: "CPC issued date", type: "date" },
+            { name: "bgExpiry", label: "BG expiry date", type: "date" },
+            { name: "revisedContractFinish", label: "Revised completion date", type: "date" },
+            { name: "cncDate", label: "CNC issued date", type: "date" },
+            { name: "insuranceStartDate", label: "Insurance start date", type: "date" },
+            { name: "edlp", label: "EDLP date", type: "date" },
+            { name: "cmgdIssuedDate", label: "CMGD issued date", type: "date" },
+            { name: "insuranceExpiry", label: "Insurance expiry date", type: "date" },
+            { name: "revisedEdlpDate", label: "Revised EDLP date", type: "date" },
           ]}
           defaultValues={{
-            contractStart: toInputDate(c?.contractStart ?? t?.startDateInLoa),
-            contractFinish: toInputDate(c?.contractFinish ?? t?.completeDateInLoa),
-            revisedContractFinish: toInputDate(c?.revisedContractFinish),
-            contractSigned: toInputDate(c?.contractSigned),
             loaIssued: toInputDate(c?.loaIssued ?? t?.loaDate),
+            contractStart: toInputDate(c?.contractStart ?? t?.startDateInLoa),
+            sitePossessionDate: toInputDate(c?.sitePossessionDate),
+            bgStartDate: toInputDate(c?.bgStartDate),
+            contractFinish: toInputDate(c?.contractFinish ?? t?.completeDateInLoa),
+            cpcIssued: toInputDate(c?.cpcIssued ?? c?.cpcDate),
             bgExpiry: toInputDate(c?.bgExpiry),
-            performanceBondExpiry: toInputDate(c?.performanceBondExpiry),
-            insuranceExpiry: toInputDate(c?.insuranceExpiry),
-            cpcDate: toInputDate(c?.cpcDate),
-            cpcIssued: toInputDate(c?.cpcIssued),
+            revisedContractFinish: toInputDate(c?.revisedContractFinish),
+            cncDate: toInputDate(c?.cncDate),
+            insuranceStartDate: toInputDate(c?.insuranceStartDate),
             edlp: toInputDate(c?.edlp),
+            cmgdIssuedDate: toInputDate(c?.cmgdIssuedDate),
+            insuranceExpiry: toInputDate(c?.insuranceExpiry),
+            revisedEdlpDate: toInputDate(c?.revisedEdlpDate),
           }}
           canEdit={canEdit}
         />
@@ -220,7 +233,7 @@ export function ProjectTabsContent({
             { name: "retentionSum", label: "Retention Sum", type: "number" },
           ]}
           defaultValues={{
-            contractSum: c?.contractSum ?? d?.govtEstimate,
+            contractSum: c?.contractSum ?? d?.preliminaryEstimate,
             revisedContractSum: c?.revisedContractSum,
             finalAccountSum: c?.finalAccountSum,
             retentionSum: c?.retentionSum,
@@ -230,16 +243,45 @@ export function ProjectTabsContent({
         />
       );
 
+    case "variation-orders":
+      return (
+        <ProjectVariationOrdersPanel
+          projectId={project.id}
+          records={project.variationOrders}
+          originalContractSum={c?.contractSum ?? d?.preliminaryEstimate ?? null}
+          canEdit={canEdit}
+        />
+      );
+
+    case "extension-of-time":
+      return (
+        <ProjectExtensionOfTimePanel
+          projectId={project.id}
+          records={project.extensionOfTimes}
+          originalContractPeriod={c?.contractPeriod ?? t?.completionPeriod ?? null}
+          canEdit={canEdit}
+        />
+      );
+
     case "financials":
       return (
         <BudgetPanel
           projectId={project.id}
           financialYearId={financialYearId}
           totals={totals}
-          allocation={allocation}
-          encumbranceTotal={encumbranceTotal}
-          encumbranceBalance={encumbranceBalance}
-          lines={project.budgetLines}
+          unitBudget={unitBudget}
+          lines={project.budgetLines.filter((line) => line.type === "warrant")}
+          purchaseOrders={project.purchaseOrders}
+          canEdit={canEdit}
+        />
+      );
+
+    case "payment-valuation":
+      return (
+        <ProjectPaymentValuationPanel
+          projectId={project.id}
+          financialYearId={financialYearId}
+          lines={project.budgetLines.filter((line) => line.type === "payment")}
           canEdit={canEdit}
         />
       );
@@ -293,7 +335,7 @@ export function ProjectTabsContent({
             scopeDescription:
               project.fsorConfig?.scopeDescription ??
               project.contract?.remarks ??
-              project.clientsNotes ??
+              project.title ??
               "",
             buildings: (project.fsorConfig?.buildings ?? []).join("\n"),
             lastSyncedAt: project.fsorConfig?.lastSyncedAt?.toISOString() ?? null,
@@ -334,11 +376,24 @@ export function ProjectTabsContent({
         </Card>
       );
 
-    case "status":
-      return canEdit ? (
-        <StatusUpdateForm projectId={project.id} latest={latest} />
-      ) : (
-        <p className="text-slate-500">Read-only access</p>
+    case "physical-progress":
+      return (
+        <PhysicalProgressPanel
+          projectId={project.id}
+          records={project.statusUpdates}
+          latest={latest ?? null}
+          canEdit={canEdit}
+        />
+      );
+
+    case "financial-progress":
+      return (
+        <FinancialProgressPanel
+          projectId={project.id}
+          records={project.statusUpdates}
+          latest={latest ?? null}
+          canEdit={canEdit}
+        />
       );
 
     default:

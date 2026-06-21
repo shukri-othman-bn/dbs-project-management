@@ -12,7 +12,11 @@ export const UNIT_CODES = [
   "IMU1",
   "IMU2",
   "IMU3",
+  "UMR",
+  "UAB",
 ] as const;
+
+export const LEGACY_SECTION_CODES = ["SEC-A", "SEC-B", "SEC-C"] as const;
 
 export type UnitCode = (typeof UNIT_CODES)[number];
 
@@ -37,4 +41,40 @@ export function sortUnitCodes(codes: string[]): string[] {
 
 export function defaultUnitAllocation(code: string): number {
   return code.startsWith("IMU") ? 250_000 : 400_000;
+}
+
+export type UnitSectionOption = {
+  id: string;
+  name: string;
+  code?: string | null;
+  unitLabel?: string | null;
+  headName?: string | null;
+  headEmail?: string | null;
+};
+
+export function formatUnitOptionLabel(section: UnitSectionOption): string {
+  const code = getUnitLabel(section) ?? section.name;
+  if (section.headName) return `${code} — ${section.headName}`;
+  return code;
+}
+
+export function defaultUnitHead(code: string) {
+  const slug = code.toLowerCase();
+  return {
+    headName: `Head of ${code}`,
+    headEmail: `hou.${slug}@dbs.gov.bn`,
+  };
+}
+
+export function sortSectionsForForm<T extends UnitSectionOption>(sections: T[]): T[] {
+  const allowed = new Set<string>(UNIT_CODES);
+  const order = new Map<string, number>(UNIT_CODES.map((code, index) => [code, index]));
+
+  return sections
+    .filter((section) => allowed.has(getUnitLabel(section) ?? ""))
+    .sort((a, b) => {
+      const aCode = getUnitLabel(a) ?? "";
+      const bCode = getUnitLabel(b) ?? "";
+      return (order.get(aCode) ?? 999) - (order.get(bCode) ?? 999);
+    });
 }

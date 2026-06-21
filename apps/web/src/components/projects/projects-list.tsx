@@ -61,8 +61,7 @@ type ProjectsTableLayout = ConfiguredProjectsTableLayout | "default";
 
 function getProjectsTableLayout(tab: ProjectListTabId): ProjectsTableLayout {
   if (tab === "all") return "all-projects";
-  if (tab === "bca") return "bca";
-  if (tab === "feasibility") return "feasibility";
+  if (tab === "pre-design") return "pre-design";
   if (tab === "design") return "design";
   if (tab === "tender-quotation") return "tender-quotation";
   if (tab === "on-going") return "on-going";
@@ -95,7 +94,7 @@ export function ProjectsList({ projects }: { projects: ProjectListRow[] }) {
   const [filters, setFilters] = useState<MasterListFilterState>({
     search: "",
     unit: "",
-    vote: "",
+    fundingType: "",
     contractor: "",
     projectType: "",
     projectStatus: "",
@@ -135,7 +134,7 @@ export function ProjectsList({ projects }: { projects: ProjectListRow[] }) {
           options={filterOptions}
           onSearchChange={(search) => patchFilters({ search })}
           onUnitChange={(unit) => patchFilters({ unit })}
-          onVoteChange={(vote) => patchFilters({ vote })}
+          onFundingTypeChange={(fundingType) => patchFilters({ fundingType })}
           onContractorChange={(contractor) => patchFilters({ contractor })}
           onProjectTypeChange={(projectType) => patchFilters({ projectType })}
           onProjectStatusChange={(projectStatus) => patchFilters({ projectStatus })}
@@ -171,19 +170,10 @@ export function ProjectsList({ projects }: { projects: ProjectListRow[] }) {
                       <MobileField label="Unit" value={<UnitPill unit={p.unit} />} />
                       <MobileField label="Ministry" value={p.ministry ?? "—"} />
                       <MobileField label="Department" value={p.department ?? "—"} />
-                      <MobileField label="Vote" value={p.vote ?? "—"} />
+                      <MobileField label="Funding Type" value={p.fundingTypeName ?? "—"} />
                       <MobileField label="Status" value={<StageBadge stage={p.lifecycleStage} />} />
                     </MobileRecordCard>
-                  ) : tableLayout === "bca" ? (
-                    <MobileRecordCard key={p.id} href={`/projects/${p.id}`} title={p.title}>
-                      <MobileField label="Unit" value={<UnitPill unit={p.unit} />} />
-                      <MobileField label="Date assigned" value={formatDateCell(p.bcaDateAssigned)} />
-                      <MobileField label="Date due" value={formatDateCell(p.bcaDateDue)} />
-                      <MobileField label="Date completed" value={formatDateCell(p.bcaDateCompleted)} />
-                      <MobileField label="Estimate" value={formatEstimateCell(p.bcaEstimate)} />
-                      <MobileField label="Letter date" value={formatDateCell(p.bcaLetterDate)} span={3} />
-                    </MobileRecordCard>
-                  ) : tableLayout === "feasibility" || tableLayout === "keep-in-view" ? (
+                  ) : tableLayout === "pre-design" || tableLayout === "keep-in-view" ? (
                     <MobileRecordCard key={p.id} href={`/projects/${p.id}`} title={p.title}>
                       <MobileField label="Unit" value={<UnitPill unit={p.unit} />} />
                       <MobileField label="Ministry" value={p.ministry ?? "—"} />
@@ -197,7 +187,7 @@ export function ProjectsList({ projects }: { projects: ProjectListRow[] }) {
                         value={formatDateCell(p.feasibilityEstimateSubmitted)}
                         span={tableLayout === "keep-in-view" ? 3 : undefined}
                       />
-                      {tableLayout === "feasibility" && (
+                      {tableLayout === "pre-design" && (
                         <MobileField
                           label="Date client confirm"
                           value={formatDateCell(p.feasibilityDateClientConfirm)}
@@ -211,8 +201,8 @@ export function ProjectsList({ projects }: { projects: ProjectListRow[] }) {
                       <MobileField label="Ministry" value={p.ministry ?? "—"} />
                       <MobileField label="Department" value={p.department ?? "—"} />
                       <MobileField label="Date confirmed" value={formatDateCell(p.designDateConfirmed)} />
-                      <MobileField label="Vote" value={p.vote ?? "—"} />
-                      <MobileField label="Estimate" value={formatEstimateCell(p.designEstimate)} />
+                      <MobileField label="Funding Type" value={p.fundingTypeName ?? "—"} />
+                      <MobileField label="Preliminary estimate" value={formatEstimateCell(p.designEstimate)} />
                       <MobileField
                         label="Quotation/tender due date"
                         value={formatDateCell(p.designQuotationTenderDueDate)}
@@ -367,37 +357,13 @@ export function ProjectsList({ projects }: { projects: ProjectListRow[] }) {
                             {p.department ?? "—"}
                           </td>
                           <td className={cn(desktopTdClass, "text-slate-600")}>
-                            {p.vote ?? "—"}
+                            {p.fundingTypeName ?? "—"}
                           </td>
                           <td className={desktopTdClass}>
                             <StageBadge stage={p.lifecycleStage} />
                           </td>
                         </>
-                      ) : tableLayout === "bca" ? (
-                        <>
-                          <td className={desktopTdClass}>
-                            <UnitPill unit={p.unit} />
-                          </td>
-                          <td className={desktopTdClass}>
-                            <ProjectTitleLink project={p} />
-                          </td>
-                          <td className={cn(desktopTdClass, "text-slate-600")}>
-                            {formatDateCell(p.bcaDateAssigned)}
-                          </td>
-                          <td className={cn(desktopTdClass, "text-slate-600")}>
-                            {formatDateCell(p.bcaDateDue)}
-                          </td>
-                          <td className={cn(desktopTdClass, "text-slate-600")}>
-                            {formatDateCell(p.bcaDateCompleted)}
-                          </td>
-                          <td className={cn(desktopTdClass, "text-slate-600")}>
-                            {formatEstimateCell(p.bcaEstimate)}
-                          </td>
-                          <td className={cn(desktopTdClass, "text-slate-600")}>
-                            {formatDateCell(p.bcaLetterDate)}
-                          </td>
-                        </>
-                      ) : tableLayout === "feasibility" || tableLayout === "keep-in-view" ? (
+                      ) : tableLayout === "pre-design" || tableLayout === "keep-in-view" ? (
                         <>
                           <td className={desktopTdClass}>
                             <UnitPill unit={p.unit} />
@@ -426,7 +392,7 @@ export function ProjectsList({ projects }: { projects: ProjectListRow[] }) {
                           <td className={cn(desktopTdClass, "text-slate-600")}>
                             {formatDateCell(p.feasibilityEstimateSubmitted)}
                           </td>
-                          {tableLayout === "feasibility" && (
+                          {tableLayout === "pre-design" && (
                             <td className={cn(desktopTdClass, "text-slate-600")}>
                               {formatDateCell(p.feasibilityDateClientConfirm)}
                             </td>
@@ -450,7 +416,7 @@ export function ProjectsList({ projects }: { projects: ProjectListRow[] }) {
                             {formatDateCell(p.designDateConfirmed)}
                           </td>
                           <td className={cn(desktopTdClass, "text-slate-600")}>
-                            {p.vote ?? "—"}
+                            {p.fundingTypeName ?? "—"}
                           </td>
                           <td className={cn(desktopTdClass, "text-slate-600")}>
                             {formatEstimateCell(p.designEstimate)}

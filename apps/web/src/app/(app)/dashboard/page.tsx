@@ -14,7 +14,8 @@ import {
 import Link from "next/link";
 import { getUnitLabel } from "@/lib/units";
 import { collectUpcomingDates, formatUpcomingDatesPeriod } from "@/lib/upcoming-dates";
-import { SectionBudgetChart } from "@/components/charts/section-budget-chart";
+import { UnitAllocationEncumbranceChart } from "@/components/charts/unit-allocation-encumbrance-chart";
+import { FundingTypeAllocationPie } from "@/components/charts/funding-type-allocation-pie";
 import { SummaryMetricCard } from "@/components/dashboard/summary-metric-card";
 import {
   DesktopDataTable,
@@ -31,7 +32,7 @@ export default async function DashboardPage() {
   if (!session?.user) redirect("/login");
   const user = session.user;
   const projects = await getProjectsWithBudget(user);
-  const { totals, byUnit } = await getDepartmentBudgetSummary(user);
+  const { totals, byUnit, byFundingType } = await getDepartmentBudgetSummary(user);
   const { activeCount, needsAttentionCount, needsAttentionProjects } =
     computeDashboardMetrics(projects);
 
@@ -40,13 +41,11 @@ export default async function DashboardPage() {
     count: projects.filter((p) => p.lifecycleStage === key).length,
   }));
 
-  const chartData = byUnit.map((row) => ({
-    section: row.unit,
-    allocation: row.allocation,
-    spent: row.spent,
-  }));
-
   const isDirector = user.role === "DIRECTOR" || user.role === "ADMIN";
+  const showDepartmentBudget =
+    user.role === "DIRECTOR" ||
+    user.role === "ADMIN" ||
+    user.role === "PROJECT_ADMIN";
   const upcomingDates = collectUpcomingDates(projects);
 
   return (
@@ -90,13 +89,45 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {isDirector && chartData.length > 0 && (
+      {showDepartmentBudget && (
         <Card>
-          <CardHeader>
-            <CardTitle>Budget by Unit</CardTitle>
+          <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle>Department Budget Overview</CardTitle>
+              <p className="text-sm text-slate-500">
+                Funding types 2105–2113 · encumbrance and balance allocation
+              </p>
+            </div>
+            <Link href="/budget" className="text-sm font-medium text-blue-600 hover:underline">
+              View full budget →
+            </Link>
           </CardHeader>
-          <CardContent>
-            <SectionBudgetChart data={chartData} />
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <p className="text-sm text-slate-500">Amount approved</p>
+                <p className="text-xl font-bold">{formatCurrency(totals.allocation)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-500">Encumbrance amount</p>
+                <p className="text-xl font-bold">{formatCurrency(totals.encumbranceTotal)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-500">Encumbrance balance</p>
+                <p className="text-xl font-bold">{formatCurrency(totals.encumbranceBalance)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-slate-500">Balance Allocation</p>
+                <p className="text-xl font-bold">{formatCurrency(totals.balanceAllocation)}</p>
+              </div>
+            </div>
+            <FundingTypeAllocationPie rows={byFundingType} compact />
+            {byUnit.length > 0 && (
+              <div>
+                <p className="mb-3 text-sm font-medium text-slate-700">Budget by Unit</p>
+                <UnitAllocationEncumbranceChart units={byUnit} compact />
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

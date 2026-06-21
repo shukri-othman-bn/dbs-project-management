@@ -22,21 +22,41 @@ export async function POST(
   }
 
   const body = await req.json();
+  const kind = body.kind === "financial" ? "financial" : "physical";
+
+  const latest = await prisma.statusUpdate.findFirst({
+    where: { projectId: id },
+    orderBy: { progressAsOf: "desc" },
+  });
+
   const update = await prisma.statusUpdate.create({
     data: {
       projectId: id,
       progressAsOf: new Date(body.progressAsOf),
-      physicalActual: body.physicalActual ?? 0,
-      physicalScheduled: body.physicalScheduled ?? 0,
-      paymentActual: body.paymentActual ?? 0,
-      paymentScheduled: body.paymentScheduled ?? 0,
-      remarks: body.remarks || null,
-      actionsRequired: body.actionsRequired || null,
+      physicalActual:
+        kind === "physical"
+          ? (body.physicalActual ?? 0)
+          : (latest?.physicalActual ?? 0),
+      physicalScheduled:
+        kind === "physical"
+          ? (body.physicalScheduled ?? 0)
+          : (latest?.physicalScheduled ?? 0),
+      paymentActual:
+        kind === "financial"
+          ? (body.paymentActual ?? 0)
+          : (latest?.paymentActual ?? 0),
+      paymentScheduled:
+        kind === "financial"
+          ? (body.paymentScheduled ?? 0)
+          : (latest?.paymentScheduled ?? 0),
+      remarks: kind === "physical" ? body.remarks || null : latest?.remarks ?? null,
+      actionsRequired:
+        kind === "physical" ? body.actionsRequired || null : latest?.actionsRequired ?? null,
       createdById: session.user.id,
     },
   });
 
-  if (body.actionsRequired) {
+  if (kind === "physical" && body.actionsRequired) {
     await prisma.project.update({
       where: { id },
       data: { toMonitor: true },

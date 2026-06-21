@@ -13,7 +13,7 @@ export default async function MasterListJoValuationBqPage() {
   const session = await auth();
   const user = session!.user;
   await syncAllFsorJobOrders().catch(() => null);
-  const raw = await getProjectsWithBudget(user);
+  const raw = await getProjectsWithBudget(user, { allBudgetLines: true });
   const projects = raw.map(toContractMatterProjectRow);
   const lines = raw.flatMap(toContractMatterLineRows);
   const jobOrders = raw.flatMap(toContractMatterJobOrderRows);

@@ -19,16 +19,17 @@ export function RagBadge({ status }: { status: RagStatus }) {
 
 export function StageBadge({ stage }: { stage: string }) {
   const styles: Record<string, string> = {
-    planning: "bg-slate-100 text-slate-700",
-    pre_contract: "bg-blue-100 text-blue-800",
-    contract: "bg-indigo-100 text-indigo-800",
+    pre_design: "bg-slate-100 text-slate-700",
+    design: "bg-violet-100 text-violet-800",
+    quotation_tender: "bg-blue-100 text-blue-800",
     ongoing: "bg-emerald-100 text-emerald-800",
-    closed: "bg-gray-100 text-gray-600",
+    completed: "bg-gray-100 text-gray-600",
+    keep_in_view: "bg-amber-100 text-amber-800",
   };
   const label =
     STAGE_STATUS_LABELS[stage as LifecycleStage] ?? stage.replace("_", " ");
   return (
-    <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", styles[stage] ?? styles.planning)}>
+    <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", styles[stage] ?? styles.pre_design)}>
       {label}
     </span>
   );

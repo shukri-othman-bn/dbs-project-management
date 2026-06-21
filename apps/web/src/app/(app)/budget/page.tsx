@@ -1,50 +1,25 @@
 import { auth } from "@/lib/auth";
 import { getDepartmentBudgetSummary, getCurrentFinancialYear } from "@/lib/data";
+import { canEditBudgetAllocation } from "@/lib/permissions";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RagBadge } from "@/components/ui/badge";
-import Link from "next/link";
-import { SpendPieChart } from "@/components/charts/spend-pie-chart";
-import { SectionBudgetChart } from "@/components/charts/section-budget-chart";
+import { FundingTypeAllocationPie } from "@/components/charts/funding-type-allocation-pie";
+import { FundingTypeBudgetCard } from "@/components/budget/funding-type-budget-card";
 import {
-  DesktopDataTable,
-  desktopTdClass,
-  desktopThClass,
-  MobileCardList,
-  MobileField,
-  MobileRecordCard,
-  ResponsiveDataView,
-} from "@/components/ui/responsive-data";
-import { getUnitLabel } from "@/lib/units";
+  UnitBudgetByFundingTypeChart,
+  UnitBudgetFundingTypeTable,
+} from "@/components/budget/unit-budget-funding-type-breakdown";
 
 export default async function BudgetDashboardPage() {
   const session = await auth();
   const user = session!.user;
   const fy = await getCurrentFinancialYear();
-  const { projects, totals, byUnit } = await getDepartmentBudgetSummary(user);
+  const canEdit = canEditBudgetAllocation(user);
+  const { totals, byUnit, byFundingType } = await getDepartmentBudgetSummary(user);
 
   const utilization =
     totals.allocation > 0 ? (totals.spent / totals.allocation) * 100 : 0;
   const unspent = totals.allocation - totals.spent;
-
-  const pieData = [
-    { name: "Spent", value: totals.spent },
-    { name: "Unspent", value: Math.max(0, unspent) },
-  ];
-
-  const unitChartData = byUnit.map((row) => ({
-    section: row.unit,
-    allocation: row.allocation,
-    spent: row.spent,
-  }));
-
-  const fundingBreakdown: Record<string, { allocation: number; spent: number }> = {};
-  for (const p of projects) {
-    const key = p.fundingType?.name ?? "Unspecified";
-    if (!fundingBreakdown[key]) fundingBreakdown[key] = { allocation: 0, spent: 0 };
-    fundingBreakdown[key].allocation += p.totals.allocation;
-    fundingBreakdown[key].spent += p.totals.paymentsCertified;
-  }
 
   const unitTotals = byUnit.reduce(
     (acc, row) => ({
@@ -57,19 +32,77 @@ export default async function BudgetDashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Budget Dashboard</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Budget</h1>
         <p className="text-slate-600">
-          Financial Year {fy?.label ?? "—"} — allocation vs warrant vs spending by unit
+          Financial Year {fy?.label ?? "—"} — department budget by funding type (2105–2113)
         </p>
       </div>
 
+      <div>
+        <h2 className="mb-4 text-lg font-semibold text-slate-900">Department overview</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm text-slate-500">Amount approved</p>
+              <p className="text-2xl font-bold">{formatCurrency(totals.allocation)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm text-slate-500">Encumbrance amount</p>
+              <p className="text-2xl font-bold">{formatCurrency(totals.encumbranceTotal)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm text-slate-500">Encumbrance balance</p>
+              <p className="text-2xl font-bold">{formatCurrency(totals.encumbranceBalance)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-sm text-slate-500">Balance Allocation</p>
+              <p className="text-2xl font-bold">{formatCurrency(totals.balanceAllocation)}</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Allocation by funding type</CardTitle>
+          <p className="text-sm text-slate-500">
+            Amount approved and breakdown by encumbrance amount, encumbrance balance, and balance
+            allocation for each funding type
+          </p>
+        </CardHeader>
+        <CardContent>
+          <FundingTypeAllocationPie rows={byFundingType} />
+        </CardContent>
+      </Card>
+
+      <div>
+        <h2 className="mb-4 text-lg font-semibold text-slate-900">Budget by funding type</h2>
+        {canEdit && (
+          <p className="mb-4 text-sm text-slate-600">
+            As Project Admin, enter amount approved on each card, then save to lock that
+            funding type budget for the financial year. Encumbrance amount is calculated
+            automatically from PO amounts where a PO ID has been assigned on projects.
+          </p>
+        )}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {byFundingType.map((row) => (
+            <FundingTypeBudgetCard
+              key={row.code}
+              row={row}
+              canEdit={canEdit}
+              financialYearId={fy?.id}
+            />
+          ))}
+        </div>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-sm text-slate-500">Total Allocation</p>
-            <p className="text-2xl font-bold">{formatCurrency(totals.allocation)}</p>
-          </CardContent>
-        </Card>
         <Card>
           <CardContent className="pt-6">
             <p className="text-sm text-slate-500">Warrant Approved</p>
@@ -95,151 +128,15 @@ export default async function BudgetDashboardPage() {
         <CardHeader>
           <CardTitle>Budget by Unit</CardTitle>
           <p className="text-sm text-slate-500">
-            Unit allocation and certified spend · {formatCurrency(unitTotals.allocation)} allocated across{" "}
-            {byUnit.length} unit{byUnit.length === 1 ? "" : "s"}
+            Unit allocation by funding type is derived from each funding type&apos;s amount approved,
+            split across units by project activity under that type. Totals per funding type match
+            the department budget · {formatCurrency(unitTotals.allocation)} allocated across{" "}
+            {byUnit.length} unit{byUnit.length === 1 ? "" : "s"}.
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
-          {unitChartData.length > 0 && <SectionBudgetChart data={unitChartData} />}
-          <ResponsiveDataView
-            mobile={
-              <MobileCardList>
-                {byUnit.map((row) => (
-                  <MobileRecordCard key={row.code} title={row.unit} subtitle={row.leadOfficer ?? "No lead officer"}>
-                    <MobileField label="Allocation" value={formatCurrency(row.allocation)} />
-                    <MobileField label="Spent" value={formatCurrency(row.spent)} />
-                    <MobileField label="Util %" value={formatPercent(row.utilizationPct)} />
-                  </MobileRecordCard>
-                ))}
-              </MobileCardList>
-            }
-            desktop={
-              <DesktopDataTable>
-                <thead>
-                  <tr className="border-b">
-                    <th className={desktopThClass}>Unit</th>
-                    <th className={desktopThClass}>Lead Officer</th>
-                    <th className={desktopThClass}>Allocation</th>
-                    <th className={desktopThClass}>Spent</th>
-                    <th className={desktopThClass}>Unspent</th>
-                    <th className={desktopThClass}>Util %</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {byUnit.map((row) => (
-                    <tr key={row.code} className="border-b border-slate-100">
-                      <td className={desktopTdClass}>
-                        <span className="font-medium">{row.unit}</span>
-                      </td>
-                      <td className={desktopTdClass}>{row.leadOfficer ?? "—"}</td>
-                      <td className={desktopTdClass}>{formatCurrency(row.allocation)}</td>
-                      <td className={desktopTdClass}>{formatCurrency(row.spent)}</td>
-                      <td className={desktopTdClass}>
-                        {formatCurrency(Math.max(0, row.allocation - row.spent))}
-                      </td>
-                      <td className={desktopTdClass}>{formatPercent(row.utilizationPct)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </DesktopDataTable>
-            }
-          />
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Spend vs Allocation</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <SpendPieChart data={pieData} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>By Funding Type</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-3">
-              {Object.entries(fundingBreakdown).map(([name, data]) => (
-                <li key={name} className="flex justify-between text-sm border-b pb-2">
-                  <span>{name}</span>
-                  <span>
-                    {formatCurrency(data.spent)} / {formatCurrency(data.allocation)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Project Budget Positions</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0 lg:p-6">
-          <ResponsiveDataView
-            mobile={
-              <MobileCardList>
-                {projects.map((p) => (
-                  <MobileRecordCard
-                    key={p.id}
-                    href={`/projects/${p.id}`}
-                    title={p.projectNumber}
-                    subtitle={p.title}
-                  >
-                    <MobileField label="Unit" value={getUnitLabel(p.section) ?? "—"} />
-                    <MobileField label="Allocation" value={formatCurrency(p.totals.allocation)} />
-                    <MobileField label="Warrant" value={formatCurrency(p.totals.warrantApproved)} />
-                    <MobileField label="Spent" value={formatCurrency(p.totals.paymentsCertified)} />
-                    <MobileField label="Unspent" value={formatCurrency(p.totals.unspent)} />
-                    <MobileField label="Util %" value={formatPercent(p.totals.utilizationPct)} />
-                    <MobileField label="RAG" value={<RagBadge status={p.totals.rag} />} />
-                  </MobileRecordCard>
-                ))}
-              </MobileCardList>
-            }
-            desktop={
-              <DesktopDataTable>
-                <thead>
-                  <tr className="border-b">
-                    <th className={desktopThClass}>Project</th>
-                    <th className={desktopThClass}>Unit</th>
-                    <th className={desktopThClass}>Allocation</th>
-                    <th className={desktopThClass}>Warrant</th>
-                    <th className={desktopThClass}>Spent</th>
-                    <th className={desktopThClass}>Unspent</th>
-                    <th className={desktopThClass}>Util %</th>
-                    <th className={desktopThClass}>RAG</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {projects.map((p) => (
-                    <tr key={p.id} className="border-b border-slate-100">
-                      <td className={desktopTdClass}>
-                        <Link href={`/projects/${p.id}`} className="font-medium hover:underline">
-                          {p.projectNumber}
-                        </Link>
-                        <p className="text-xs text-slate-500">{p.title}</p>
-                      </td>
-                      <td className={desktopTdClass}>{getUnitLabel(p.section) ?? "—"}</td>
-                      <td className={desktopTdClass}>{formatCurrency(p.totals.allocation)}</td>
-                      <td className={desktopTdClass}>{formatCurrency(p.totals.warrantApproved)}</td>
-                      <td className={desktopTdClass}>{formatCurrency(p.totals.paymentsCertified)}</td>
-                      <td className={desktopTdClass}>{formatCurrency(p.totals.unspent)}</td>
-                      <td className={desktopTdClass}>{formatPercent(p.totals.utilizationPct)}</td>
-                      <td className={desktopTdClass}>
-                        <RagBadge status={p.totals.rag} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </DesktopDataTable>
-            }
-          />
+          {byUnit.length > 0 && <UnitBudgetByFundingTypeChart units={byUnit} />}
+          <UnitBudgetFundingTypeTable units={byUnit} />
         </CardContent>
       </Card>
     </div>

@@ -10,7 +10,7 @@ import { MasterListHeader, MasterListViewPills } from "@/components/master-list/
 export default async function MasterListPaymentClaimsPage() {
   const session = await auth();
   const user = session!.user;
-  const raw = await getProjectsWithBudget(user);
+  const raw = await getProjectsWithBudget(user, { allBudgetLines: true });
   const projects = raw.map(toContractMatterProjectRow);
   const purchaseOrders = raw.flatMap(toPaymentClaimsRows);
 

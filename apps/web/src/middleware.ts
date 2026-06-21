@@ -24,6 +24,18 @@ export default auth((req) => {
     }
   }
 
+  if (isLoggedIn && req.nextUrl.pathname.startsWith("/budget")) {
+    const role = req.auth?.user?.role;
+    if (
+      role !== "DIRECTOR" &&
+      role !== "HOS" &&
+      role !== "ADMIN" &&
+      role !== "PROJECT_ADMIN"
+    ) {
+      return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
+    }
+  }
+
   return NextResponse.next();
 });
 

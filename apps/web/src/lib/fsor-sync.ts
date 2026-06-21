@@ -142,7 +142,7 @@ export function toFsorContract(project: ProjectForFsor): FsorContract {
     scopeDescription:
       fsor?.scopeDescription ??
       project.contract?.remarks ??
-      project.clientsNotes ??
+      project.title ??
       "",
     buildings: fsor?.buildings ?? [],
   };

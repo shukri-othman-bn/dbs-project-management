@@ -2,6 +2,8 @@ import { ContractCategory, LifecycleStage, ProjectType } from "@prisma/client";
 import { CONTRACT_CATEGORY_LABELS, PROJECT_TYPE_LABELS } from "@/lib/project-labels";
 import { StageBadge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { HeaderSvAmountField } from "./header-sv-amount-field";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 function MetaItem({ label, value }: { label: string; value?: string | null }) {
   return (
@@ -13,6 +15,8 @@ function MetaItem({ label, value }: { label: string; value?: string | null }) {
 }
 
 export function ProjectDetailHeader({
+  projectId,
+  canEdit = false,
   projectNumber,
   unit,
   quotationOrContractNo,
@@ -22,12 +26,20 @@ export function ProjectDetailHeader({
   title,
   contractorName,
   oicName,
-  supervisingOfficer,
-  architectName,
+  fundingTypeName,
+  svAmount,
   ministry,
   department,
-  clientsNotes,
+  fyLabel,
+  fyAllocation,
+  totalSpent,
+  contractStartDate,
+  contractFinishDate,
+  contractPeriod,
+  contractAmount,
 }: {
+  projectId: string;
+  canEdit?: boolean;
   projectNumber: string;
   unit?: string | null;
   quotationOrContractNo?: string | null;
@@ -37,11 +49,17 @@ export function ProjectDetailHeader({
   title: string;
   contractorName?: string | null;
   oicName?: string | null;
-  supervisingOfficer?: string | null;
-  architectName?: string | null;
+  fundingTypeName?: string | null;
+  svAmount?: number | null;
   ministry?: string | null;
   department?: string | null;
-  clientsNotes?: string | null;
+  fyLabel?: string | null;
+  fyAllocation?: number | null;
+  totalSpent?: number | null;
+  contractStartDate?: Date | null;
+  contractFinishDate?: Date | null;
+  contractPeriod?: string | null;
+  contractAmount?: number | null;
 }) {
   return (
     <Card>
@@ -73,14 +91,39 @@ export function ProjectDetailHeader({
           </div>
         </div>
 
-        <div className="grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2 lg:grid-cols-4">
-          <MetaItem label="Contractor" value={contractorName} />
-          <MetaItem label="Officer in charge" value={oicName} />
-          <MetaItem label="Supervising officer" value={supervisingOfficer} />
-          <MetaItem label="Architect" value={architectName} />
-          <MetaItem label="Ministry" value={ministry} />
-          <MetaItem label="Department" value={department} />
-          <MetaItem label="Clients" value={clientsNotes} />
+        <div className="grid gap-6 border-t border-slate-100 pt-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-4">
+            <MetaItem label="Officer in charge" value={oicName} />
+            <MetaItem label="Contractor" value={contractorName} />
+            <MetaItem label="Contract start date" value={formatDate(contractStartDate)} />
+          </div>
+          <div className="space-y-4">
+            <MetaItem label="Client ministry" value={ministry} />
+            <MetaItem label="Client department" value={department} />
+            <MetaItem label="Contract finish date" value={formatDate(contractFinishDate)} />
+          </div>
+          <div className="space-y-4">
+            <MetaItem label="Funding type" value={fundingTypeName} />
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">SV amount</p>
+              <HeaderSvAmountField projectId={projectId} value={svAmount} canEdit={canEdit} />
+            </div>
+            <MetaItem label="Contract period" value={contractPeriod} />
+          </div>
+          <div className="space-y-4">
+            <MetaItem
+              label={fyLabel ? `FY ${fyLabel} allocation` : "FY allocation"}
+              value={fyAllocation != null ? formatCurrency(fyAllocation) : null}
+            />
+            <MetaItem
+              label="Total spent"
+              value={totalSpent != null ? formatCurrency(totalSpent) : null}
+            />
+            <MetaItem
+              label="Contract amount"
+              value={contractAmount != null ? formatCurrency(contractAmount) : null}
+            />
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -15,6 +15,7 @@ import {
   ChevronDown,
   ChevronRight,
   FileBarChart,
+  Network,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS } from "@/lib/budget";
@@ -22,7 +23,8 @@ import { MASTER_LIST_VIEWS } from "@/lib/master-list-views";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["DIRECTOR", "HOS", "OFFICER", "PROJECT_ADMIN", "ADMIN"] },
-  { href: "/budget", label: "Budget", icon: Wallet, roles: ["DIRECTOR", "HOS", "ADMIN"] },
+  { href: "/organization", label: "Organization", icon: Network, roles: ["DIRECTOR", "HOS", "OFFICER", "PROJECT_ADMIN", "ADMIN"] },
+  { href: "/budget", label: "Budget", icon: Wallet, roles: ["DIRECTOR", "HOS", "ADMIN", "PROJECT_ADMIN"] },
   {
     href: "/contractor-track-record",
     label: "Contractor Track Record",

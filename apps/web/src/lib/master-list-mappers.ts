@@ -1,4 +1,5 @@
 import type { getProjectsWithBudget } from "./data";
+import { getProjectOicDisplayName } from "./project-people";
 import { getUnitLabel } from "./units";
 import type { ContractMatterLineRow, ContractMatterProjectRow, ContractMatterVariationOrderRow, ContractMatterEotRow, ContractMatterJobOrderRow, ContractMatterPurchaseOrderRow, ContractMatterRequestRow } from "./contract-matters-filters";
 import type { getMatterRequests } from "./data";
@@ -29,12 +30,17 @@ function latestCmgdIssuedDate(jobOrders: { cmgdIssued: Date | null }[]): string 
   return latest?.toISOString() ?? null;
 }
 
-function latestVoDates(variationOrders: { submittedDate: Date | null; approvedDate: Date | null }[]) {
+function latestVoDates(
+  variationOrders: {
+    submittedToSbmDate: Date | null;
+    approvedDate: Date | null;
+  }[]
+) {
   let latestSubmitted: Date | null = null;
   let latestApproved: Date | null = null;
   for (const vo of variationOrders) {
-    if (vo.submittedDate && (!latestSubmitted || vo.submittedDate > latestSubmitted)) {
-      latestSubmitted = vo.submittedDate;
+    if (vo.submittedToSbmDate && (!latestSubmitted || vo.submittedToSbmDate > latestSubmitted)) {
+      latestSubmitted = vo.submittedToSbmDate;
     }
     if (vo.approvedDate && (!latestApproved || vo.approvedDate > latestApproved)) {
       latestApproved = vo.approvedDate;
@@ -59,10 +65,10 @@ export function toProjectListRow(p: ProjectWithBudget): ProjectListRow {
     contractorName: p.contractorName ?? p.contract?.mainContractor ?? null,
     toMonitor: p.toMonitor,
     unit: getUnitLabel(p.section),
-    vote: p.design?.vote ?? null,
+    fundingTypeName: p.fundingType?.name ?? null,
     designProjectNo: p.design?.designProjectNo ?? null,
     tenderNo: p.tendering?.tenderNo ?? null,
-    oicName: p.oic?.name ?? null,
+    oicName: getProjectOicDisplayName(p),
     ministry: p.client?.ministry ?? null,
     department: p.client?.department ?? null,
     physicalActual: p.latestStatus?.physicalActual ?? 0,
@@ -84,7 +90,7 @@ export function toProjectListRow(p: ProjectWithBudget): ProjectListRow {
     bcaDateAssigned: p.bca?.dateAssigned?.toISOString() ?? null,
     bcaDateDue: p.bca?.dateDue?.toISOString() ?? null,
     bcaDateCompleted: p.bca?.dateCompleted?.toISOString() ?? null,
-    bcaEstimate: p.bca?.estimate ?? p.design?.estimate ?? null,
+    bcaEstimate: p.bca?.estimate ?? p.design?.preliminaryEstimate ?? null,
     bcaLetterDate: p.bca?.letterDate?.toISOString() ?? null,
     feasibilityRequestDate: p.feasibility?.requestDate?.toISOString() ?? null,
     feasibilitySiteInspection: p.feasibility?.siteInspection?.toISOString() ?? null,
@@ -93,11 +99,11 @@ export function toProjectListRow(p: ProjectWithBudget): ProjectListRow {
     feasibilityEstimateSubmitted: p.feasibility?.estimateSubmitted?.toISOString() ?? null,
     feasibilityDateClientConfirm: p.feasibility?.dateClientConfirm?.toISOString() ?? null,
     designDateConfirmed: p.design?.dateConfirmed?.toISOString() ?? null,
-    designEstimate: p.design?.estimate ?? null,
+    designEstimate: p.design?.preliminaryEstimate ?? null,
     designQuotationTenderDueDate: p.design?.quotationTenderDueDate?.toISOString() ?? null,
     designActualQuotationTenderDate: p.design?.actualQuotationTenderDate?.toISOString() ?? null,
     contractSum: p.contract?.revisedContractSum ?? p.contract?.contractSum ?? null,
-    contractPeriod: p.contract?.contractPeriod ?? p.design?.contractPeriod ?? null,
+    contractPeriod: p.contract?.contractPeriod ?? p.tendering?.completionPeriod ?? null,
     loaIssuedDate:
       p.tendering?.loaDate?.toISOString() ?? p.contract?.loaIssued?.toISOString() ?? null,
     sitePossessionDate: p.contract?.sitePossessionDate?.toISOString() ?? null,
@@ -109,7 +115,8 @@ export function toProjectListRow(p: ProjectWithBudget): ProjectListRow {
     latestEotDate: latestApprovedEotDate(p.extensionOfTimes),
     cncDate: p.contract?.cncDate?.toISOString() ?? null,
     edlpDate: p.contract?.edlp?.toISOString() ?? null,
-    cmgdIssuedDate: latestCmgdIssuedDate(p.jobOrders),
+    cmgdIssuedDate:
+      p.contract?.cmgdIssuedDate?.toISOString() ?? latestCmgdIssuedDate(p.jobOrders),
     finalVoSubmittedDate: voDates.submitted,
     finalVoApprovedDate: voDates.approved,
     finalContractSum:
@@ -167,11 +174,11 @@ export function toContractMatterProjectRow(p: ProjectWithBudget): ContractMatter
     contractorName: p.contractorName ?? p.contract?.mainContractor ?? null,
     startDate: start?.toISOString() ?? null,
     completionDate: completion?.toISOString() ?? null,
-    contractPeriod: p.contract?.contractPeriod ?? p.design?.contractPeriod ?? null,
+    contractPeriod: p.contract?.contractPeriod ?? p.tendering?.completionPeriod ?? null,
     contractSum: p.contract?.revisedContractSum ?? p.contract?.contractSum ?? null,
     lifecycleStage: p.lifecycleStage,
     projectType: p.projectType,
-    vote: p.design?.vote ?? null,
+    fundingTypeName: p.fundingType?.name ?? null,
     ministry: p.client?.ministry ?? null,
     department: p.client?.department ?? null,
     toMonitor: p.toMonitor,
@@ -192,7 +199,7 @@ export function toContractMatterLineRows(p: ProjectWithBudget): ContractMatterLi
     contractorName: p.contractorName ?? p.contract?.mainContractor ?? null,
     lifecycleStage: p.lifecycleStage,
     projectType: p.projectType,
-    vote: p.design?.vote ?? null,
+    fundingTypeName: p.fundingType?.name ?? null,
     ministry: p.client?.ministry ?? null,
     department: p.client?.department ?? null,
   };
@@ -203,6 +210,7 @@ export function toContractMatterLineRows(p: ProjectWithBudget): ContractMatterLi
     date: line.date?.toISOString() ?? null,
     claimDate: line.claimDate?.toISOString() ?? null,
     description: line.description,
+    progressClaimNo: line.progressClaimNo,
     amountApproved: line.amountApproved,
     amountCertified: line.amountCertified,
     amountBalance: line.amountBalance,
@@ -225,7 +233,7 @@ function contractMatterRecordBase(p: ProjectWithBudget) {
     quotationContractAmount,
     lifecycleStage: p.lifecycleStage,
     projectType: p.projectType,
-    vote: p.design?.vote ?? null,
+    fundingTypeName: p.fundingType?.name ?? null,
     ministry: p.client?.ministry ?? null,
     department: p.client?.department ?? null,
   };
@@ -236,11 +244,11 @@ export function toContractMatterVariationOrderRows(
 ): ContractMatterVariationOrderRow[] {
   const base = contractMatterRecordBase(p);
 
-  return p.variationOrders.map((vo) => ({
+  return p.variationOrders.map((vo, index) => ({
     id: vo.id,
-    voNo: vo.voNo,
-    voAmount: vo.amount,
-    submittedDate: vo.submittedDate?.toISOString() ?? null,
+    voNo: `VO ${index + 1}`,
+    voAmount: vo.voAmount ?? 0,
+    submittedDate: vo.submittedToSbmDate?.toISOString() ?? null,
     approvedDate: vo.approvedDate?.toISOString() ?? null,
     ...base,
   }));
@@ -264,20 +272,22 @@ export function toContractMatterEotRows(p: ProjectWithBudget): ContractMatterEot
   const revisedCompletion = p.contract?.revisedContractFinish ?? null;
 
   const projectFields = {
-    contractPeriod: p.contract?.contractPeriod ?? p.design?.contractPeriod ?? null,
+    contractPeriod: p.contract?.contractPeriod ?? p.tendering?.completionPeriod ?? null,
     startDate: start?.toISOString() ?? null,
     completionDate: completion?.toISOString() ?? null,
     revisedCompletionDate: revisedCompletion?.toISOString() ?? null,
   };
 
-  return p.extensionOfTimes.map((eot) => ({
+  return p.extensionOfTimes.map((eot, index) => ({
     id: eot.id,
-    eotNo: eot.eotNo,
+    eotNo: `EOT ${index + 1}`,
     eotPeriod: eot.eotPeriod,
-    submittedDate: eot.submittedDate?.toISOString() ?? null,
+    submittedDate: eot.submittedToSbmDate?.toISOString() ?? null,
     approvedDate: eot.approvedDate?.toISOString() ?? null,
     ...base,
     ...projectFields,
+    revisedCompletionDate:
+      eot.revisedCompletionDate?.toISOString() ?? projectFields.revisedCompletionDate,
   }));
 }
 
@@ -359,7 +369,7 @@ function purchaseOrderRecordBase(
     contractorName: base.contractorName,
     lifecycleStage: base.lifecycleStage,
     projectType: base.projectType,
-    vote: base.vote,
+    fundingTypeName: base.fundingTypeName,
     ministry: base.ministry,
     department: base.department,
   };
@@ -413,9 +423,16 @@ export function toPaymentClaimsRows(p: ProjectWithBudget): ContractMatterPurchas
       return aDate - bDate;
     })
     .map((line) => {
-      const po = takePurchaseOrder((candidates) =>
-        matchPurchaseOrderToPaymentLine(line, candidates)
-      );
+      let po: ProjectWithBudget["purchaseOrders"][number] | null = null;
+      const fkMatch = p.purchaseOrders.find((candidate) => candidate.budgetLineId === line.id);
+      if (fkMatch && !usedPoIds.has(fkMatch.id)) {
+        usedPoIds.add(fkMatch.id);
+        po = fkMatch;
+      } else {
+        po = takePurchaseOrder((candidates) =>
+          matchPurchaseOrderToPaymentLine(line, candidates)
+        );
+      }
       const workflow = po
         ? purchaseOrderWorkflowFields(po)
         : {
@@ -466,7 +483,7 @@ export function toContractMatterJobOrderRows(p: ProjectWithBudget): ContractMatt
     contractorName: base.contractorName,
     lifecycleStage: base.lifecycleStage,
     projectType: base.projectType,
-    vote: base.vote,
+    fundingTypeName: base.fundingTypeName,
     ministry: base.ministry,
     department: base.department,
   }));

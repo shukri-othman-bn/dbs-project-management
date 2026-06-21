@@ -1,6 +1,14 @@
 import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { defaultUnitAllocation, UNIT_CODES } from "../src/lib/units";
+import { defaultUnitAllocation, defaultUnitHead, LEGACY_SECTION_CODES, UNIT_CODES } from "../src/lib/units";
+import {
+  DEFAULT_CAPITAL_FUNDING_TYPE,
+  DEFAULT_DEPARTMENTAL_FUNDING_TYPE,
+  FUNDING_TYPE_NAMES,
+  mapLegacyFundingTypeName,
+} from "../src/lib/funding-types";
+import { syncExtensionOfTimeCalculatedFields } from "../src/lib/extension-of-time-sync";
+import { syncVariationOrderCalculatedFields } from "../src/lib/variation-order-sync";
 
 const prisma = new PrismaClient();
 
@@ -8,44 +16,58 @@ async function main() {
   const passwordHash = await bcrypt.hash("password123", 10);
 
   const units: Record<string, { id: string }> = {};
-  const officers: Record<string, { id: string }> = {};
+  const heads: Record<string, { id: string }> = {};
+
+  await prisma.user.updateMany({
+    where: { section: { code: { in: [...LEGACY_SECTION_CODES] } } },
+    data: { sectionId: null },
+  });
+  await prisma.sectionBudget.deleteMany({
+    where: { section: { code: { in: [...LEGACY_SECTION_CODES] } } },
+  });
+  await prisma.matterRequest.deleteMany({
+    where: { section: { code: { in: [...LEGACY_SECTION_CODES] } } },
+  });
+  await prisma.section.deleteMany({
+    where: { code: { in: [...LEGACY_SECTION_CODES] } },
+  });
 
   for (let i = 0; i < UNIT_CODES.length; i++) {
     const code = UNIT_CODES[i];
+    const { headName, headEmail } = defaultUnitHead(code);
     const unit = await prisma.section.upsert({
       where: { code },
-      update: { name: code, unitLabel: code },
-      create: { name: code, code, unitLabel: code },
+      update: { name: code, unitLabel: code, headName, headEmail },
+      create: { name: code, code, unitLabel: code, headName, headEmail },
     });
     units[code] = unit;
 
-    const email = `officer${i + 1}@dbs.gov.bn`;
-    const officer = await prisma.user.upsert({
-      where: { email },
+    const head = await prisma.user.upsert({
+      where: { email: headEmail },
       update: {
-        name: `Officer ${i + 1}`,
+        name: headName,
         sectionId: unit.id,
-        role: Role.OFFICER,
+        role: Role.HOS,
       },
       create: {
-        email,
-        name: `Officer ${i + 1}`,
+        email: headEmail,
+        name: headName,
         passwordHash,
-        role: Role.OFFICER,
+        role: Role.HOS,
         sectionId: unit.id,
       },
     });
-    officers[code] = officer;
+    heads[code] = head;
   }
 
   await prisma.financialYear.updateMany({ data: { isCurrent: false } });
   const fy = await prisma.financialYear.upsert({
-    where: { label: "2025/2026" },
+    where: { label: "2026/2027" },
     update: { isCurrent: true },
     create: {
-      label: "2025/2026",
-      startDate: new Date("2025-04-01"),
-      endDate: new Date("2026-03-31"),
+      label: "2026/2027",
+      startDate: new Date("2026-04-01"),
+      endDate: new Date("2027-03-31"),
       isCurrent: true,
     },
   });
@@ -68,16 +90,34 @@ async function main() {
     });
   }
 
-  const fundingDts = await prisma.fundingType.upsert({
-    where: { name: "DTS Allocation" },
-    update: {},
-    create: { name: "DTS Allocation", mainCategory: "Departmental" },
+  const fundingTypes: Record<string, { id: string }> = {};
+  for (const name of FUNDING_TYPE_NAMES) {
+    const code = name.slice(0, 4);
+    const fundingType = await prisma.fundingType.upsert({
+      where: { name },
+      update: { mainCategory: code },
+      create: { name, mainCategory: code },
+    });
+    fundingTypes[name] = fundingType;
+  }
+
+  const legacyFunding = await prisma.fundingType.findMany({
+    where: { name: { notIn: [...FUNDING_TYPE_NAMES] } },
   });
-  const fundingGov = await prisma.fundingType.upsert({
-    where: { name: "GOBRN" },
-    update: {},
-    create: { name: "GOBRN", mainCategory: "Special" },
+  for (const legacy of legacyFunding) {
+    const mappedName = mapLegacyFundingTypeName(legacy.name);
+    if (!mappedName) continue;
+    await prisma.project.updateMany({
+      where: { fundingTypeId: legacy.id },
+      data: { fundingTypeId: fundingTypes[mappedName].id },
+    });
+  }
+  await prisma.fundingType.deleteMany({
+    where: { name: { notIn: [...FUNDING_TYPE_NAMES] } },
   });
+
+  const fundingDept = fundingTypes[DEFAULT_DEPARTMENTAL_FUNDING_TYPE];
+  const fundingCapital = fundingTypes[DEFAULT_CAPITAL_FUNDING_TYPE];
 
   const clientMoe = await prisma.client.upsert({
     where: {
@@ -151,7 +191,7 @@ async function main() {
       lifecycleStage: "ongoing" as const,
       unitCode: "BM3",
       clientId: clientMod.id,
-      fundingTypeId: fundingDts.id,
+      fundingTypeId: fundingDept.id,
       toMonitor: false,
       allocation: 40000,
       physicalActual: 45,
@@ -161,18 +201,18 @@ async function main() {
       remarks: "Term contract in progress.",
       actionsRequired: "",
       design: {
-        vote: "OCAR",
-        govtEstimate: 40000,
-        contractPeriod: "12 Weeks",
+        preliminaryEstimate: 40000,
       },
       contractorName: "GreenField Maintenance Sdn Bhd",
       tendering: {
         tenderNo: "QBM/46/2026",
+        completionPeriod: "12 Weeks",
         openDate: new Date("2026-04-27"),
         closingDate: new Date("2026-05-11"),
         receivedDate: new Date("2026-05-10"),
         assessmentSubmittedDate: new Date("2026-05-18"),
         recommendationDate: new Date("2026-05-20"),
+        recommendationFromDbsoDate: new Date("2026-05-22"),
         awardedDate: new Date("2026-05-25"),
         approvedDate: new Date("2026-05-25"),
         loaDate: new Date("2026-05-25"),
@@ -196,7 +236,7 @@ async function main() {
       lifecycleStage: "ongoing" as const,
       unitCode: "BM7",
       clientId: clientMoe.id,
-      fundingTypeId: fundingDts.id,
+      fundingTypeId: fundingDept.id,
       toMonitor: true,
       allocation: 450000,
       physicalActual: 72,
@@ -208,6 +248,7 @@ async function main() {
       contractorName: "BuildRight Contractors Sdn Bhd",
       tendering: {
         tenderNo: "TND/MOE/2025-001",
+        completionPeriod: "18 months",
         loaDate: new Date("2025-03-15"),
         approvedDate: new Date("2025-03-10"),
       },
@@ -227,10 +268,10 @@ async function main() {
     {
       projectNumber: "DBS-2025-002",
       title: "Clinic Extension Design Services",
-      lifecycleStage: "pre_contract" as const,
+      lifecycleStage: "quotation_tender" as const,
       unitCode: "BM2",
       clientId: clientMoh.id,
-      fundingTypeId: fundingDts.id,
+      fundingTypeId: fundingDept.id,
       toMonitor: false,
       allocation: 120000,
       physicalActual: 35,
@@ -240,9 +281,8 @@ async function main() {
       remarks: "Tender documents under internal review.",
       actionsRequired: "",
       design: {
-        vote: "OCAR",
-        archProgress: 80,
-        qsProgress: 60,
+        preliminaryEstimate: 120000,
+        svAmount: 6000,
       },
       tendering: {
         tenderNo: "TND/MOH/2025-002",
@@ -257,10 +297,10 @@ async function main() {
     {
       projectNumber: "DBS-2025-003",
       title: "Department Building M&E Upgrade",
-      lifecycleStage: "contract" as const,
+      lifecycleStage: "quotation_tender" as const,
       unitCode: "IMU1",
       clientId: clientMoe.id,
-      fundingTypeId: fundingGov.id,
+      fundingTypeId: fundingCapital.id,
       toMonitor: false,
       allocation: 280000,
       physicalActual: 15,
@@ -283,10 +323,10 @@ async function main() {
     {
       projectNumber: "DBS-2026-TND-001",
       title: "Roof Replacement Quotation - Lambak Kanan School",
-      lifecycleStage: "pre_contract" as const,
+      lifecycleStage: "quotation_tender" as const,
       unitCode: "BM4",
       clientId: clientMoe.id,
-      fundingTypeId: fundingDts.id,
+      fundingTypeId: fundingDept.id,
       toMonitor: false,
       allocation: 195000,
       physicalActual: 0,
@@ -309,10 +349,10 @@ async function main() {
     {
       projectNumber: "DBS-2026-TND-002",
       title: "Civil Works Tender - Telisai Community Hall",
-      lifecycleStage: "pre_contract" as const,
+      lifecycleStage: "quotation_tender" as const,
       unitCode: "BM6",
       clientId: clientMod.id,
-      fundingTypeId: fundingDts.id,
+      fundingTypeId: fundingDept.id,
       toMonitor: true,
       allocation: 520000,
       physicalActual: 0,
@@ -332,10 +372,10 @@ async function main() {
     {
       projectNumber: "DBS-2024-089",
       title: "Road Access Improvement - Belait",
-      lifecycleStage: "closed" as const,
+      lifecycleStage: "completed" as const,
       unitCode: "BM1",
       clientId: clientMoe.id,
-      fundingTypeId: fundingDts.id,
+      fundingTypeId: fundingDept.id,
       toMonitor: false,
       allocation: 95000,
       physicalActual: 100,
@@ -347,6 +387,7 @@ async function main() {
       contractorName: "RoadWorks Contractors Sdn Bhd",
       tendering: {
         tenderNo: "TND/MOE/2024-089",
+        completionPeriod: "10 months",
         loaDate: new Date("2024-06-01"),
         approvedDate: new Date("2024-05-20"),
       },
@@ -367,7 +408,7 @@ async function main() {
       lifecycleStage: "ongoing" as const,
       unitCode: "BM5",
       clientId: clientMoh.id,
-      fundingTypeId: fundingDts.id,
+      fundingTypeId: fundingDept.id,
       toMonitor: false,
       allocation: 320000,
       physicalActual: 55,
@@ -379,6 +420,7 @@ async function main() {
       contractorName: "MediBuild Engineering Sdn Bhd",
       tendering: {
         tenderNo: "TND/MOH/2025-004",
+        completionPeriod: "14 months",
         loaDate: new Date("2025-06-20"),
         approvedDate: new Date("2025-06-10"),
       },
@@ -397,10 +439,10 @@ async function main() {
     {
       projectNumber: "DBS-2025-005",
       title: "Infrastructure Monitoring System",
-      lifecycleStage: "pre_contract" as const,
+      lifecycleStage: "quotation_tender" as const,
       unitCode: "IMU2",
       clientId: clientMod.id,
-      fundingTypeId: fundingGov.id,
+      fundingTypeId: fundingCapital.id,
       toMonitor: false,
       allocation: 180000,
       physicalActual: 20,
@@ -410,22 +452,20 @@ async function main() {
       remarks: "Consultancy phase.",
       actionsRequired: "",
       design: {
-        vote: "GOBRN",
-        estimate: 180000,
+        preliminaryEstimate: 180000,
+        svAmount: 9000,
         dateConfirmed: new Date("2026-01-15"),
         quotationTenderDueDate: new Date("2026-06-30"),
         actualQuotationTenderDate: new Date("2026-05-20"),
-        archProgress: 65,
-        qsProgress: 50,
       },
     },
     {
       projectNumber: "DBS-2026-DES-001",
       title: "Library Extension Design - Rimba Secondary",
-      lifecycleStage: "pre_contract" as const,
+      lifecycleStage: "design" as const,
       unitCode: "BM5",
       clientId: clientMoe.id,
-      fundingTypeId: fundingDts.id,
+      fundingTypeId: fundingDept.id,
       toMonitor: false,
       allocation: 240000,
       physicalActual: 10,
@@ -435,22 +475,19 @@ async function main() {
       remarks: "Design drawings under QS review.",
       actionsRequired: "",
       design: {
-        vote: "OCAR",
         designProjectNo: "DES/BM5/2026-001",
-        estimate: 240000,
+        preliminaryEstimate: 240000,
         dateConfirmed: new Date("2026-02-01"),
         quotationTenderDueDate: new Date("2026-07-15"),
-        archProgress: 90,
-        qsProgress: 70,
       },
     },
     {
       projectNumber: "DBS-2026-DES-002",
       title: "Office Renovation Design - Bandar Seri Begawan",
-      lifecycleStage: "pre_contract" as const,
+      lifecycleStage: "design" as const,
       unitCode: "BM9",
       clientId: clientMod.id,
-      fundingTypeId: fundingDts.id,
+      fundingTypeId: fundingDept.id,
       toMonitor: true,
       allocation: 155000,
       physicalActual: 5,
@@ -460,22 +497,19 @@ async function main() {
       remarks: "Awaiting client confirmation on layout.",
       actionsRequired: "Follow up on vote allocation.",
       design: {
-        vote: "OCAR",
-        estimate: 155000,
+        preliminaryEstimate: 155000,
         dateConfirmed: new Date("2025-12-10"),
         quotationTenderDueDate: new Date("2026-04-30"),
         actualQuotationTenderDate: new Date("2026-03-28"),
-        archProgress: 100,
-        qsProgress: 85,
       },
     },
     {
       projectNumber: "DBS-2026-DES-003",
       title: "Carpark Structure Design - Jerudong Park",
-      lifecycleStage: "pre_contract" as const,
+      lifecycleStage: "design" as const,
       unitCode: "BM10",
       clientId: clientMoe.id,
-      fundingTypeId: fundingGov.id,
+      fundingTypeId: fundingCapital.id,
       toMonitor: false,
       allocation: 310000,
       physicalActual: 0,
@@ -485,21 +519,19 @@ async function main() {
       remarks: "Structural design in progress.",
       actionsRequired: "",
       design: {
-        vote: "GOBRN",
         designProjectNo: "DES/BM10/2026-003",
-        estimate: 310000,
+        preliminaryEstimate: 310000,
         quotationTenderDueDate: new Date("2026-08-31"),
-        archProgress: 55,
-        steProgress: 40,
       },
     },
     {
       projectNumber: "DBS-2026-BCA-001",
       title: "New Classroom Block - Berakas Primary",
-      lifecycleStage: "planning" as const,
+      lifecycleStage: "design" as const,
+      projectType: "bca" as const,
       unitCode: "BM1",
       clientId: clientMoe.id,
-      fundingTypeId: fundingDts.id,
+      fundingTypeId: fundingDept.id,
       toMonitor: false,
       allocation: 850000,
       physicalActual: 0,
@@ -509,9 +541,8 @@ async function main() {
       remarks: "BCA submission in progress.",
       actionsRequired: "Prepare cost estimate for client review.",
       design: {
-        vote: "OCAR",
         designProjectNo: "DES/BM1/2026-001",
-        estimate: 850000,
+        preliminaryEstimate: 850000,
       },
       bca: {
         dateAssigned: new Date("2026-01-10"),
@@ -523,10 +554,11 @@ async function main() {
     {
       projectNumber: "DBS-2026-BCA-002",
       title: "Health Clinic Structural Assessment - Kuala Belait",
-      lifecycleStage: "planning" as const,
+      lifecycleStage: "design" as const,
+      projectType: "bca" as const,
       unitCode: "BM2",
       clientId: clientMoh.id,
-      fundingTypeId: fundingDts.id,
+      fundingTypeId: fundingDept.id,
       toMonitor: true,
       allocation: 125000,
       physicalActual: 0,
@@ -536,9 +568,8 @@ async function main() {
       remarks: "Awaiting site survey report.",
       actionsRequired: "",
       design: {
-        vote: "OCAR",
         designProjectNo: "DES/BM2/2026-002",
-        estimate: 125000,
+        preliminaryEstimate: 125000,
       },
       bca: {
         dateAssigned: new Date("2026-02-03"),
@@ -550,10 +581,11 @@ async function main() {
     {
       projectNumber: "DBS-2026-BCA-003",
       title: "Staff Quarters Feasibility - Tutong District",
-      lifecycleStage: "planning" as const,
+      lifecycleStage: "design" as const,
+      projectType: "bca" as const,
       unitCode: "BM7",
       clientId: clientMod.id,
-      fundingTypeId: fundingGov.id,
+      fundingTypeId: fundingCapital.id,
       toMonitor: false,
       allocation: 420000,
       physicalActual: 0,
@@ -563,9 +595,8 @@ async function main() {
       remarks: "BCA completed; pending client endorsement.",
       actionsRequired: "",
       design: {
-        vote: "GOBRN",
         designProjectNo: "DES/BM7/2026-003",
-        estimate: 420000,
+        preliminaryEstimate: 420000,
       },
       bca: {
         dateAssigned: new Date("2025-11-01"),
@@ -578,10 +609,11 @@ async function main() {
     {
       projectNumber: "DBS-2026-BCA-004",
       title: "Bridge Load Capacity Study - Temburong",
-      lifecycleStage: "planning" as const,
+      lifecycleStage: "design" as const,
+      projectType: "bca" as const,
       unitCode: "IMU1",
       clientId: clientMod.id,
-      fundingTypeId: fundingDts.id,
+      fundingTypeId: fundingDept.id,
       toMonitor: false,
       allocation: 95000,
       physicalActual: 0,
@@ -591,10 +623,8 @@ async function main() {
       remarks: "Assigned to structural unit.",
       actionsRequired: "Confirm survey access dates with client.",
       design: {
-        vote: "OCAR",
         designProjectNo: "DES/IMU1/2026-004",
-        govtEstimate: 95000,
-        estimate: 95000,
+        preliminaryEstimate: 95000,
       },
       bca: {
         dateAssigned: new Date("2026-03-01"),
@@ -606,10 +636,10 @@ async function main() {
     {
       projectNumber: "DBS-2026-FEA-001",
       title: "Sports Hall Feasibility Study - Seria",
-      lifecycleStage: "planning" as const,
+      lifecycleStage: "pre_design" as const,
       unitCode: "BM3",
       clientId: clientMoe.id,
-      fundingTypeId: fundingDts.id,
+      fundingTypeId: fundingDept.id,
       toMonitor: false,
       allocation: 650000,
       physicalActual: 0,
@@ -629,10 +659,10 @@ async function main() {
     {
       projectNumber: "DBS-2026-FEA-002",
       title: "Rural Clinic Access Road Feasibility",
-      lifecycleStage: "planning" as const,
+      lifecycleStage: "pre_design" as const,
       unitCode: "BM4",
       clientId: clientMoh.id,
-      fundingTypeId: fundingDts.id,
+      fundingTypeId: fundingDept.id,
       toMonitor: true,
       allocation: 180000,
       physicalActual: 0,
@@ -651,10 +681,10 @@ async function main() {
     {
       projectNumber: "DBS-2026-FEA-003",
       title: "Warehouse Conversion Feasibility - Muara",
-      lifecycleStage: "planning" as const,
+      lifecycleStage: "pre_design" as const,
       unitCode: "BM6",
       clientId: clientMod.id,
-      fundingTypeId: fundingGov.id,
+      fundingTypeId: fundingCapital.id,
       toMonitor: false,
       allocation: 320000,
       physicalActual: 0,
@@ -675,10 +705,10 @@ async function main() {
     {
       projectNumber: "DBS-2026-FEA-004",
       title: "Drainage Improvement Feasibility - Sengkurong",
-      lifecycleStage: "planning" as const,
+      lifecycleStage: "keep_in_view" as const,
       unitCode: "BM8",
       clientId: clientMoe.id,
-      fundingTypeId: fundingDts.id,
+      fundingTypeId: fundingDept.id,
       toMonitor: false,
       allocation: 95000,
       physicalActual: 0,
@@ -716,7 +746,7 @@ async function main() {
     } = p;
 
     const sectionId = units[unitCode].id;
-    const oicUserId = officers[unitCode].id;
+    const slug = unitCode.toLowerCase();
 
     const project = await prisma.project.upsert({
       where: { projectNumber: projectData.projectNumber },
@@ -726,7 +756,9 @@ async function main() {
         sectionId,
         clientId: projectData.clientId,
         fundingTypeId: projectData.fundingTypeId,
-        oicUserId,
+        oicUserId: null,
+        oicName: projectData.oicName ?? `Project Officer (${unitCode})`,
+        oicEmail: projectData.oicEmail ?? `oic.${slug}@dbs.gov.bn`,
         toMonitor: projectData.toMonitor,
         quotationOrContractNo: projectData.quotationOrContractNo,
         projectType: projectData.projectType,
@@ -734,15 +766,13 @@ async function main() {
           "contractorName" in projectData
             ? (projectData as { contractorName?: string }).contractorName
             : undefined,
-        supervisingOfficer:
-          "supervisingOfficer" in projectData
-            ? (projectData as { supervisingOfficer?: string }).supervisingOfficer
-            : undefined,
       },
       create: {
         ...projectData,
         sectionId,
-        oicUserId,
+        oicUserId: null,
+        oicName: projectData.oicName ?? `Project Officer (${unitCode})`,
+        oicEmail: projectData.oicEmail ?? `oic.${slug}@dbs.gov.bn`,
       },
     });
 
@@ -753,13 +783,14 @@ async function main() {
           financialYearId: fy.id,
         },
       },
-      update: { allocation },
+      update: { allocation, budgetSummaryLocked: true },
       create: {
         projectId: project.id,
         financialYearId: fy.id,
         allocation,
         encumbranceTotal: allocation * 0.6,
-        encumbranceBalance: allocation * 0.15,
+        encumbranceBalance: allocation * 0.6,
+        budgetSummaryLocked: true,
       },
     });
 
@@ -804,29 +835,30 @@ async function main() {
             projectId: project.id,
             financialYearId: fy.id,
             type: "payment",
+            progressClaimNo: 1,
             date: new Date("2025-09-01"),
             claimDate: new Date("2025-08-15"),
             amountApproved: allocation * 0.3,
             amountCertified: allocation * 0.28,
             voucherRef: "BV-2025-001",
-            description: "Progress payment 1",
           },
           {
             projectId: project.id,
             financialYearId: fy.id,
             type: "payment",
+            progressClaimNo: 2,
             date: new Date("2025-11-15"),
             claimDate: new Date("2025-11-01"),
             amountApproved: allocation * 0.25,
             amountCertified: allocation * 0.25,
             voucherRef: "BV-2025-002",
-            description: "Progress payment 2",
           },
         ],
       });
     }
 
-    if (projectData.lifecycleStage !== "pre_contract") {
+    const postAwardStages = ["quotation_tender", "ongoing", "completed"] as const;
+    if (postAwardStages.includes(projectData.lifecycleStage)) {
       const contractData = {
         mainContractor: "ABC Construction Sdn Bhd",
         contractNo: `CTR-${projectData.projectNumber}`,
@@ -846,44 +878,60 @@ async function main() {
         },
       });
 
+      if (contractData.contractPeriod) {
+        await prisma.projectTendering.upsert({
+          where: { projectId: project.id },
+          update: { completionPeriod: contractData.contractPeriod },
+          create: {
+            projectId: project.id,
+            completionPeriod: contractData.contractPeriod,
+          },
+        });
+      }
+
       const voCount = await prisma.variationOrder.count({ where: { projectId: project.id } });
       if (voCount === 0) {
         await prisma.variationOrder.createMany({
           data: [
             {
               projectId: project.id,
-              voNo: `VO-${projectData.projectNumber}-01`,
-              amount: allocation * 0.05,
-              submittedDate: new Date("2025-08-01"),
+              submittedToSbmDate: new Date("2025-08-01"),
+              receivedByDbsoDate: new Date("2025-08-08"),
+              committeeReviewDate: new Date("2025-08-20"),
+              submittedToDgoDate: new Date("2025-09-01"),
+              submittedToClientDate: new Date("2025-09-05"),
               approvedDate: new Date("2025-09-10"),
+              voAmount: allocation * 0.05,
+              isLocked: true,
             },
             {
               projectId: project.id,
-              voNo: `VO-${projectData.projectNumber}-02`,
-              amount: allocation * 0.03,
-              submittedDate: new Date("2025-10-15"),
-              approvedDate: null,
+              submittedToSbmDate: new Date("2025-10-15"),
+              receivedByDbsoDate: new Date("2025-10-22"),
             },
           ],
         });
       }
 
       await prisma.extensionOfTime.deleteMany({ where: { projectId: project.id } });
-      await prisma.extensionOfTime.createMany({
+        await prisma.extensionOfTime.createMany({
           data: [
             {
               projectId: project.id,
-              eotNo: `EOT-${projectData.projectNumber}-01`,
-              eotPeriod: "4 Weeks",
-              submittedDate: new Date("2025-07-20"),
+              submittedToSbmDate: new Date("2025-07-20"),
+              receivedByDbsoDate: new Date("2025-07-25"),
+              committeeReviewDate: new Date("2025-08-01"),
+              submittedToDgoDate: new Date("2025-08-03"),
+              submittedToClientDate: new Date("2025-08-04"),
               approvedDate: new Date("2025-08-05"),
+              eotPeriod: "4 weeks",
+              revisedCompletionDate: new Date("2026-06-28"),
+              isLocked: true,
             },
             {
               projectId: project.id,
-              eotNo: `EOT-${projectData.projectNumber}-02`,
-              eotPeriod: "2 Weeks",
-              submittedDate: new Date("2025-11-01"),
-              approvedDate: null,
+              submittedToSbmDate: new Date("2025-11-01"),
+              eotPeriod: "2 weeks",
             },
           ],
         });
@@ -915,14 +963,21 @@ async function main() {
       });
 
       await prisma.purchaseOrder.deleteMany({ where: { projectId: project.id } });
+
+      const paymentLines = await prisma.budgetLine.findMany({
+        where: { projectId: project.id, type: "payment" },
+        orderBy: { progressClaimNo: "asc" },
+      });
+
       await prisma.purchaseOrder.createMany({
         data: [
           {
             projectId: project.id,
+            budgetLineId: paymentLines[0]?.id ?? null,
             poId: `PO-${projectData.projectNumber}-01`,
             claimDate: new Date("2025-07-01"),
             claimCertified: allocation * 0.06,
-            poAmount: allocation * 0.06,
+            poAmount: paymentLines[0]?.amountCertified ?? allocation * 0.06,
             sesDate: new Date("2025-07-15"),
             invoiceDate: new Date("2025-08-01"),
             eDispatchedDate: new Date("2025-08-20"),
@@ -931,10 +986,11 @@ async function main() {
           },
           {
             projectId: project.id,
+            budgetLineId: paymentLines[1]?.id ?? null,
             poId: `PO-${projectData.projectNumber}-02`,
             claimDate: new Date("2025-11-10"),
             claimCertified: allocation * 0.04,
-            poAmount: allocation * 0.04,
+            poAmount: paymentLines[1]?.amountCertified ?? allocation * 0.04,
             sesDate: new Date("2025-11-20"),
             invoiceDate: null,
             eDispatchedDate: null,
@@ -945,11 +1001,8 @@ async function main() {
     }
 
     const designData = design ?? {
-      estimate: allocation,
+      preliminaryEstimate: allocation,
       svAmount: allocation * 0.05,
-      ...(projectData.lifecycleStage === "pre_contract"
-        ? { archProgress: 80, qsProgress: 60 }
-        : {}),
     };
     await prisma.projectDesign.upsert({
       where: { projectId: project.id },
@@ -963,6 +1016,13 @@ async function main() {
         update: tendering,
         create: { projectId: project.id, ...tendering },
       });
+
+      if ("completionPeriod" in tendering && tendering.completionPeriod) {
+        await prisma.contractDetails.update({
+          where: { projectId: project.id },
+          data: { contractPeriod: tendering.completionPeriod },
+        });
+      }
     }
 
     if (bca) {
@@ -1077,13 +1137,20 @@ async function main() {
     })),
   });
 
+  const allProjectIds = await prisma.project.findMany({ select: { id: true } });
+  for (const project of allProjectIds) {
+    await syncVariationOrderCalculatedFields(project.id);
+    await syncExtensionOfTimeCalculatedFields(project.id);
+  }
+
   console.log("Seed complete.");
   console.log("Login accounts (password: password123):");
   console.log("  Director:", director.email);
   console.log("  Admin:", admin.email);
   console.log("  Project Admin:", projectAdmin.email, "(password: ProjectAdmin2026!)");
-  for (let i = 0; i < UNIT_CODES.length; i++) {
-    console.log(`  Officer ${i + 1} (${UNIT_CODES[i]}):`, `officer${i + 1}@dbs.gov.bn`);
+  for (const code of UNIT_CODES) {
+    const { headEmail } = defaultUnitHead(code);
+    console.log(`  Head of ${code}:`, headEmail);
   }
 }
 

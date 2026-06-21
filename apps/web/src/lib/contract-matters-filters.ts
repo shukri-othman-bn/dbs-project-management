@@ -16,7 +16,7 @@ export type ContractMatterProjectRow = {
   contractSum: number | null;
   lifecycleStage: LifecycleStage;
   projectType: ProjectType | null;
-  vote: string | null;
+  fundingTypeName: string | null;
   ministry: string | null;
   department: string | null;
   toMonitor: boolean;
@@ -37,12 +37,13 @@ export type ContractMatterLineRow = {
   contractorName: string | null;
   lifecycleStage: LifecycleStage;
   projectType: ProjectType | null;
-  vote: string | null;
+  fundingTypeName: string | null;
   ministry: string | null;
   department: string | null;
   date: string | null;
   claimDate: string | null;
   description: string | null;
+  progressClaimNo: number | null;
   amountApproved: number;
   amountCertified: number | null;
   amountBalance: number | null;
@@ -64,7 +65,7 @@ export type ContractMatterVariationOrderRow = {
   approvedDate: string | null;
   lifecycleStage: LifecycleStage;
   projectType: ProjectType | null;
-  vote: string | null;
+  fundingTypeName: string | null;
   ministry: string | null;
   department: string | null;
 };
@@ -87,7 +88,7 @@ export type ContractMatterEotRow = {
   approvedDate: string | null;
   lifecycleStage: LifecycleStage;
   projectType: ProjectType | null;
-  vote: string | null;
+  fundingTypeName: string | null;
   ministry: string | null;
   department: string | null;
 };
@@ -110,7 +111,7 @@ export type ContractMatterJobOrderRow = {
   cmgdIssued: string | null;
   lifecycleStage: LifecycleStage;
   projectType: ProjectType | null;
-  vote: string | null;
+  fundingTypeName: string | null;
   ministry: string | null;
   department: string | null;
 };
@@ -159,7 +160,7 @@ export type ContractMatterPurchaseOrderRow = {
   paidDate: string | null;
   lifecycleStage: LifecycleStage;
   projectType: ProjectType | null;
-  vote: string | null;
+  fundingTypeName: string | null;
   ministry: string | null;
   department: string | null;
 };
@@ -186,7 +187,7 @@ export function projectMatchesContractMatterSearch(
     | "contractNo"
     | "contractorName"
     | "unit"
-    | "vote"
+    | "fundingType"
     | "ministry"
     | "department"
     | "projectType"
@@ -202,7 +203,7 @@ export function projectMatchesContractMatterSearch(
     p.contractNo,
     p.contractorName,
     p.unit,
-    p.vote,
+    p.fundingTypeName,
     p.ministry,
     p.department,
     p.projectType ? PROJECT_TYPE_LABELS[p.projectType] : null,
@@ -217,7 +218,7 @@ export function collectContractMatterFilterOptions(
   projects: ContractMatterProjectRow[]
 ) {
   const units = new Set<string>();
-  const votes = new Set<string>();
+  const fundingTypes = new Set<string>();
   const contractors = new Set<string>();
   const projectTypes = new Set<ProjectType>();
   const statuses = new Set<string>();
@@ -226,7 +227,7 @@ export function collectContractMatterFilterOptions(
 
   for (const p of projects) {
     if (p.unit) units.add(p.unit);
-    if (p.vote) votes.add(p.vote);
+    if (p.fundingTypeName) fundingTypes.add(p.fundingTypeName);
     if (p.contractorName) contractors.add(p.contractorName);
     if (p.projectType) projectTypes.add(p.projectType);
     statuses.add(STAGE_STATUS_LABELS[p.lifecycleStage]);
@@ -236,7 +237,7 @@ export function collectContractMatterFilterOptions(
 
   return {
     units: [...units].sort(),
-    votes: [...votes].sort(),
+    fundingTypes: [...fundingTypes].sort(),
     contractors: [...contractors].sort(),
     projectTypes: [...projectTypes].sort((a, b) =>
       PROJECT_TYPE_LABELS[a].localeCompare(PROJECT_TYPE_LABELS[b])
@@ -252,7 +253,7 @@ export function filterContractMatterProjects(
   filters: {
     search: string;
     unit: string;
-    vote: string;
+    fundingType: string;
     contractor: string;
     projectType: string;
     projectStatus: string;
@@ -263,7 +264,7 @@ export function filterContractMatterProjects(
   return projects.filter((p) => {
     if (!projectMatchesContractMatterSearch(p, filters.search)) return false;
     if (filters.unit && p.unit !== filters.unit) return false;
-    if (filters.vote && p.vote !== filters.vote) return false;
+    if (filters.fundingType && p.fundingTypeName !== filters.fundingType) return false;
     if (filters.contractor && p.contractorName !== filters.contractor) return false;
     if (filters.projectType && p.projectType !== filters.projectType) return false;
     if (
@@ -283,7 +284,7 @@ export function filterContractMatterLines(
   filters: {
     search: string;
     unit: string;
-    vote: string;
+    fundingType: string;
     contractor: string;
     projectType: string;
     projectStatus: string;
@@ -306,7 +307,7 @@ export function filterContractMatterLines(
       contractSum: null,
       lifecycleStage: row.lifecycleStage,
       projectType: row.projectType,
-      vote: row.vote,
+      fundingTypeName: row.fundingTypeName,
       ministry: row.ministry,
       department: row.department,
       toMonitor: false,
@@ -316,7 +317,7 @@ export function filterContractMatterLines(
     };
     if (!projectMatchesContractMatterSearch(pseudo, filters.search)) return false;
     if (filters.unit && row.unit !== filters.unit) return false;
-    if (filters.vote && row.vote !== filters.vote) return false;
+    if (filters.fundingType && row.fundingTypeName !== filters.fundingType) return false;
     if (filters.contractor && row.contractorName !== filters.contractor) return false;
     if (filters.projectType && row.projectType !== filters.projectType) return false;
     if (
@@ -336,7 +337,7 @@ export function filterVariationOrderRows(
   filters: {
     search: string;
     unit: string;
-    vote: string;
+    fundingType: string;
     contractor: string;
     projectType: string;
     projectStatus: string;
@@ -354,7 +355,7 @@ export function filterVariationOrderRows(
         row.contractorName,
         row.unit,
         row.voNo,
-        row.vote,
+        row.fundingTypeName,
         row.ministry,
         row.department,
         row.projectType ? PROJECT_TYPE_LABELS[row.projectType] : null,
@@ -365,7 +366,7 @@ export function filterVariationOrderRows(
       if (!haystack.includes(q)) return false;
     }
     if (filters.unit && row.unit !== filters.unit) return false;
-    if (filters.vote && row.vote !== filters.vote) return false;
+    if (filters.fundingType && row.fundingTypeName !== filters.fundingType) return false;
     if (filters.contractor && row.contractorName !== filters.contractor) return false;
     if (filters.projectType && row.projectType !== filters.projectType) return false;
     if (
@@ -385,7 +386,7 @@ export function filterEotRows(
   filters: {
     search: string;
     unit: string;
-    vote: string;
+    fundingType: string;
     contractor: string;
     projectType: string;
     projectStatus: string;
@@ -405,7 +406,7 @@ export function filterEotRows(
         row.eotNo,
         row.eotPeriod,
         row.contractPeriod,
-        row.vote,
+        row.fundingTypeName,
         row.ministry,
         row.department,
         row.projectType ? PROJECT_TYPE_LABELS[row.projectType] : null,
@@ -416,7 +417,7 @@ export function filterEotRows(
       if (!haystack.includes(q)) return false;
     }
     if (filters.unit && row.unit !== filters.unit) return false;
-    if (filters.vote && row.vote !== filters.vote) return false;
+    if (filters.fundingType && row.fundingTypeName !== filters.fundingType) return false;
     if (filters.contractor && row.contractorName !== filters.contractor) return false;
     if (filters.projectType && row.projectType !== filters.projectType) return false;
     if (
@@ -436,7 +437,7 @@ export function filterJobOrderRows(
   filters: {
     search: string;
     unit: string;
-    vote: string;
+    fundingType: string;
     contractor: string;
     projectType: string;
     projectStatus: string;
@@ -454,7 +455,7 @@ export function filterJobOrderRows(
         row.contractorName,
         row.unit,
         row.joNo,
-        row.vote,
+        row.fundingTypeName,
         row.ministry,
         row.department,
         row.projectType ? PROJECT_TYPE_LABELS[row.projectType] : null,
@@ -466,7 +467,7 @@ export function filterJobOrderRows(
       if (!haystack.includes(q)) return false;
     }
     if (filters.unit && row.unit !== filters.unit) return false;
-    if (filters.vote && row.vote !== filters.vote) return false;
+    if (filters.fundingType && row.fundingTypeName !== filters.fundingType) return false;
     if (filters.contractor && row.contractorName !== filters.contractor) return false;
     if (filters.projectType && row.projectType !== filters.projectType) return false;
     if (
@@ -486,7 +487,7 @@ export function filterPurchaseOrderRows(
   filters: {
     search: string;
     unit: string;
-    vote: string;
+    fundingType: string;
     contractor: string;
     projectType: string;
     projectStatus: string;
@@ -503,7 +504,7 @@ export function filterPurchaseOrderRows(
         row.contractNo,
         row.contractorName,
         row.unit,
-        row.vote,
+        row.fundingTypeName,
         row.ministry,
         row.department,
         row.joNo,
@@ -518,7 +519,7 @@ export function filterPurchaseOrderRows(
       if (!haystack.includes(q)) return false;
     }
     if (filters.unit && row.unit !== filters.unit) return false;
-    if (filters.vote && row.vote !== filters.vote) return false;
+    if (filters.fundingType && row.fundingTypeName !== filters.fundingType) return false;
     if (filters.contractor && row.contractorName !== filters.contractor) return false;
     if (filters.projectType && row.projectType !== filters.projectType) return false;
     if (
@@ -538,7 +539,7 @@ export function filterRequestRows(
   filters: {
     search: string;
     unit: string;
-    vote: string;
+    fundingType: string;
     contractor: string;
     projectType: string;
     projectStatus: string;

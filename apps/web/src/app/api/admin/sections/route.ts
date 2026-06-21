@@ -16,7 +16,15 @@ export async function POST(req: Request) {
   if (!session?.user || !canAccessAdmin(session.user)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  const { name, code } = await req.json();
-  const section = await prisma.section.create({ data: { name, code: code || null } });
+  const { name, code, headName, headEmail } = await req.json();
+  const section = await prisma.section.create({
+    data: {
+      name,
+      code: code || null,
+      headName: headName || null,
+      headEmail: headEmail || null,
+      unitLabel: code || null,
+    },
+  });
   return NextResponse.json(section);
 }

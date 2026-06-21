@@ -17,6 +17,7 @@ import {
   JO_PAYMENT_VALUATION_TABS,
   type JoPaymentValuationTabId,
 } from "@/lib/jo-payment-valuation-filters";
+import { CONTRACTOR_CLAIM_REF_LETTER_LABEL } from "@/lib/payment-valuation";
 import { countActiveMasterListFilters, type MasterListFilterState } from "@/lib/master-list-filters";
 import { ListTabBar } from "@/components/master-list/list-tab-bar";
 import { MasterListFiltersBar } from "@/components/master-list/master-list-filters-bar";
@@ -35,7 +36,7 @@ export function JoPaymentValuationList({
   const [filters, setFilters] = useState<MasterListFilterState>({
     search: "",
     unit: "",
-    vote: "",
+    fundingType: "",
     contractor: "",
     projectType: "",
     projectStatus: "",
@@ -90,7 +91,7 @@ export function JoPaymentValuationList({
           options={filterOptions}
           onSearchChange={(search) => patchFilters({ search })}
           onUnitChange={(unit) => patchFilters({ unit })}
-          onVoteChange={(vote) => patchFilters({ vote })}
+          onFundingTypeChange={(fundingType) => patchFilters({ fundingType })}
           onContractorChange={(contractor) => patchFilters({ contractor })}
           onProjectTypeChange={(projectType) => patchFilters({ projectType })}
           onProjectStatusChange={(projectStatus) => patchFilters({ projectStatus })}
@@ -120,7 +121,11 @@ export function JoPaymentValuationList({
         {tab === "job-order" ? (
           <JobOrderTable rows={filteredJobOrders} />
         ) : (
-          <PaymentTable rows={filteredPayments} descriptionLabel="Payment Description" />
+          <PaymentTable
+            rows={filteredPayments}
+            showProgressClaimNo
+            descriptionLabel={CONTRACTOR_CLAIM_REF_LETTER_LABEL}
+          />
         )}
 
         {rowCount === 0 && (

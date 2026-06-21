@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { getProjectById, getCurrentFinancialYear, ensureProjectRelations } from "@/lib/data";
+import { getProjectById, getCurrentFinancialYear, ensureProjectRelations, getProjectFyAllocation, getUnitBudgetMetrics } from "@/lib/data";
 import { canEditProject } from "@/lib/permissions";
 import { computeBudgetTotals } from "@/lib/budget";
 import {
@@ -8,6 +8,7 @@ import {
   type ProjectTabId,
 } from "@/lib/project-labels";
 import { getUnitLabel } from "@/lib/units";
+import { getProjectOicDisplayName } from "@/lib/project-people";
 import { getFsorAppBaseUrl } from "@/lib/fsor-sync";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -37,7 +38,9 @@ export default async function ProjectDetailPage({
   const canEdit = canEditProject(user, project);
   const activeTab: ProjectTabId = PROJECT_TAB_IDS.has(tabParam as ProjectTabId)
     ? (tabParam as ProjectTabId)
-    : DEFAULT_PROJECT_TAB;
+    : tabParam === "status"
+      ? "physical-progress"
+      : DEFAULT_PROJECT_TAB;
   const resolvedTab =
     activeTab === "fsor" && project.contractCategory !== "fsor"
       ? DEFAULT_PROJECT_TAB
@@ -45,11 +48,11 @@ export default async function ProjectDetailPage({
 
   const fy = await getCurrentFinancialYear();
   const budget = project.budgets[0];
-  const allocation = budget?.allocation ?? 0;
+  const allocation = await getProjectFyAllocation(id);
+  const unitBudget = await getUnitBudgetMetrics(project.sectionId, project.fundingType);
   const totals = computeBudgetTotals({
     allocation,
     encumbranceTotal: budget?.encumbranceTotal ?? 0,
-    encumbranceBalance: budget?.encumbranceBalance ?? 0,
     budgetLines: project.budgetLines.filter(
       (l) => !fy || l.financialYearId === fy.id || !l.financialYearId
     ),
@@ -58,6 +61,7 @@ export default async function ProjectDetailPage({
   });
 
   const unit = getUnitLabel(project.section);
+  const oicName = getProjectOicDisplayName(project);
 
   return (
     <div className="space-y-6">
@@ -82,6 +86,8 @@ export default async function ProjectDetailPage({
       </div>
 
       <ProjectDetailHeader
+        projectId={id}
+        canEdit={canEdit}
         projectNumber={project.projectNumber}
         unit={unit}
         quotationOrContractNo={project.quotationOrContractNo ?? project.projectNumber}
@@ -90,12 +96,29 @@ export default async function ProjectDetailPage({
         contractCategory={project.contractCategory}
         title={project.title}
         contractorName={project.contractorName ?? project.contract?.mainContractor}
-        oicName={project.oic?.name}
-        supervisingOfficer={project.supervisingOfficer}
-        architectName={project.architectName}
+        oicName={oicName}
+        fundingTypeName={project.fundingType?.name}
+        svAmount={project.design?.svAmount}
         ministry={project.client?.ministry}
         department={project.client?.department}
-        clientsNotes={project.clientsNotes}
+        fyLabel={fy?.label}
+        fyAllocation={allocation}
+        totalSpent={totals.paymentsCertified}
+        contractStartDate={
+          project.contract?.contractStart ?? project.tendering?.startDateInLoa ?? null
+        }
+        contractFinishDate={
+          project.contract?.contractFinish ??
+          project.tendering?.completeDateInLoa ??
+          project.completion?.completionDate ??
+          null
+        }
+        contractPeriod={
+          project.contract?.contractPeriod ?? project.tendering?.completionPeriod ?? null
+        }
+        contractAmount={
+          project.contract?.contractSum ?? project.design?.preliminaryEstimate ?? null
+        }
       />
 
       <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
@@ -113,9 +136,7 @@ export default async function ProjectDetailPage({
             tab={resolvedTab}
             canEdit={canEdit}
             totals={totals}
-            allocation={allocation}
-            encumbranceTotal={budget?.encumbranceTotal ?? 0}
-            encumbranceBalance={budget?.encumbranceBalance ?? 0}
+            unitBudget={unitBudget}
             financialYearId={fy?.id}
             fsorAppUrl={getFsorAppBaseUrl()}
           />

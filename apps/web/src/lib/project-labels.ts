@@ -10,16 +10,36 @@ export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   contract_works: "Contract Works",
   consultancy: "Consultancy",
   maintenance: "Maintenance",
+  bca: "BCA",
   other: "Other",
 };
 
+export const PROJECT_TYPES: ProjectType[] = [
+  "quotations",
+  "contract_works",
+  "consultancy",
+  "maintenance",
+  "bca",
+  "other",
+];
+
 export const STAGE_STATUS_LABELS: Record<LifecycleStage, string> = {
-  planning: "Feasibility Study",
-  pre_contract: "Pre-Contract",
-  contract: "Contract",
-  ongoing: "Ongoing",
-  closed: "Completed",
+  pre_design: "Pre-Design",
+  design: "Design",
+  quotation_tender: "Quotation/Tender",
+  ongoing: "On-Going",
+  completed: "Completed",
+  keep_in_view: "Keep In View",
 };
+
+export const LIFECYCLE_STAGES: LifecycleStage[] = [
+  "pre_design",
+  "design",
+  "quotation_tender",
+  "ongoing",
+  "completed",
+  "keep_in_view",
+];
 
 export const PROJECT_TAB_GROUPS = [
   {
@@ -38,15 +58,18 @@ export const PROJECT_TAB_GROUPS = [
       { id: "contract-details", label: "Details" },
       { id: "contract-dates", label: "Dates" },
       { id: "contract-amounts", label: "Amounts" },
+      { id: "variation-orders", label: "Variation order" },
+      { id: "extension-of-time", label: "Extension of time" },
     ],
   },
   {
     id: "progress",
     label: "Progress & budget",
     tabs: [
-      { id: "completion", label: "Completion" },
+      { id: "physical-progress", label: "Physical progress" },
+      { id: "financial-progress", label: "Financial progress" },
       { id: "financials", label: "Financials" },
-      { id: "status", label: "Status update" },
+      { id: "payment-valuation", label: "Payment Valuation" },
     ],
   },
   {

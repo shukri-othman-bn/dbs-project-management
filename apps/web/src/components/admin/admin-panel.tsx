@@ -16,7 +16,7 @@ export function AdminPanel({
   clients,
   users,
 }: {
-  sections: { id: string; name: string; code: string | null }[];
+  sections: { id: string; name: string; code: string | null; headName: string | null; headEmail: string | null }[];
   financialYears: { id: string; label: string; isCurrent: boolean; startDate: string; endDate: string }[];
   fundingTypes: { id: string; name: string; mainCategory: string | null }[];
   clients: { id: string; ministry: string; department: string | null }[];
@@ -38,7 +38,7 @@ export function AdminPanel({
   }
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: "sections", label: "Sections" },
+    { id: "sections", label: "Units" },
     { id: "fy", label: "Financial Years" },
     { id: "funding", label: "Funding Types" },
     { id: "clients", label: "Clients" },
@@ -63,23 +63,36 @@ export function AdminPanel({
 
       {tab === "sections" && (
         <AdminSection
-          title="Sections"
-          items={sections.map((s) => `${s.name} (${s.code ?? "—"})`)}
+          title="Units (Head of Unit)"
+          items={sections.map(
+            (s) =>
+              `${s.code ?? s.name} — ${s.headName ?? "No head"} (${s.headEmail ?? "no email"})`
+          )}
           onSubmit={(form) =>
             post("/api/admin/sections", {
               name: form.get("name"),
               code: form.get("code"),
+              headName: form.get("headName"),
+              headEmail: form.get("headEmail"),
             })
           }
           fields={
             <>
               <div>
-                <Label>Name</Label>
-                <Input name="name" required />
+                <Label>Unit code</Label>
+                <Input name="code" required placeholder="BM1" />
               </div>
               <div>
-                <Label>Code</Label>
-                <Input name="code" />
+                <Label>Head of Unit — full name</Label>
+                <Input name="headName" required />
+              </div>
+              <div>
+                <Label>Govt email (sign-in)</Label>
+                <Input name="headEmail" type="email" required placeholder="name@dbs.gov.bn" />
+              </div>
+              <div>
+                <Label>Display name</Label>
+                <Input name="name" required placeholder="BM1" />
               </div>
             </>
           }
@@ -210,7 +223,7 @@ export function AdminPanel({
                 <select name="role" className="w-full rounded-lg border px-3 py-2 text-sm">
                   <option value="OFFICER">Officer</option>
                   <option value="PROJECT_ADMIN">Project Admin</option>
-                  <option value="HOS">Head of Section</option>
+                  <option value="HOS">Head of Unit</option>
                   <option value="DIRECTOR">Director</option>
                   <option value="ADMIN">Admin</option>
                 </select>

@@ -1,6 +1,7 @@
 import { LifecycleStage, ProjectType } from "@prisma/client";
 import { PROJECT_TYPE_LABELS, STAGE_STATUS_LABELS } from "./project-labels";
 import type { MasterListFilterState } from "@/lib/master-list-filters";
+import { sortFundingTypes } from "@/lib/funding-types";
 
 /** All Projects table column widths — must total 100. Adjust widthPercent as needed. */
 export const ALL_PROJECTS_TABLE_COLUMNS = [
@@ -8,7 +9,7 @@ export const ALL_PROJECTS_TABLE_COLUMNS = [
   { id: "projectTitle", label: "Project title", widthPercent: 32 },
   { id: "ministry", label: "Ministry", widthPercent: 18 },
   { id: "department", label: "Department", widthPercent: 18 },
-  { id: "vote", label: "Vote", widthPercent: 10 },
+  { id: "fundingType", label: "Funding Type", widthPercent: 10 },
   { id: "status", label: "Status", widthPercent: 14 },
 ] as const;
 
@@ -57,8 +58,8 @@ export const DESIGN_TABLE_COLUMNS = [
   { id: "ministry", label: "Ministry", widthPercent: 10 },
   { id: "department", label: "Department", widthPercent: 10 },
   { id: "dateConfirmed", label: "Date confirmed", widthPercent: 8 },
-  { id: "vote", label: "Vote", widthPercent: 12 },
-  { id: "estimate", label: "Estimate", widthPercent: 10 },
+  { id: "fundingType", label: "Funding Type", widthPercent: 12 },
+  { id: "estimate", label: "Preliminary estimate", widthPercent: 10 },
   { id: "quotationTenderDueDate", label: "Quotation/tender due date", widthPercent: 12 },
   { id: "actualQuotationTenderDate", label: "Actual quotation/tender date", widthPercent: 12 },
 ] as const;
@@ -118,8 +119,7 @@ export const COMPLETED_TABLE_COLUMNS = [
 
 export type ConfiguredProjectsTableLayout =
   | "all-projects"
-  | "bca"
-  | "feasibility"
+  | "pre-design"
   | "keep-in-view"
   | "design"
   | "tender-quotation"
@@ -131,8 +131,7 @@ export const CONFIGURED_PROJECTS_TABLE_COLUMNS: Record<
   readonly { id: string; label: string; widthPercent: number }[]
 > = {
   "all-projects": ALL_PROJECTS_TABLE_COLUMNS,
-  bca: BCA_TABLE_COLUMNS,
-  feasibility: FEASIBILITY_TABLE_COLUMNS,
+  "pre-design": FEASIBILITY_TABLE_COLUMNS,
   "keep-in-view": KEEP_IN_VIEW_TABLE_COLUMNS,
   design: DESIGN_TABLE_COLUMNS,
   "tender-quotation": TENDER_QUOTATION_TABLE_COLUMNS,
@@ -142,13 +141,12 @@ export const CONFIGURED_PROJECTS_TABLE_COLUMNS: Record<
 
 export const PROJECT_LIST_TABS = [
   { id: "all", label: "All Projects" },
-  { id: "bca", label: "BCA" },
-  { id: "feasibility", label: "Feasibility" },
+  { id: "pre-design", label: "Pre-Design" },
   { id: "design", label: "Design" },
-  { id: "tender-quotation", label: "Tender/Quotation" },
+  { id: "tender-quotation", label: "Quotation/Tender" },
   { id: "on-going", label: "On-Going" },
   { id: "completed", label: "Completed" },
-  { id: "keep-in-view", label: "Keep in view" },
+  { id: "keep-in-view", label: "Keep In View" },
 ] as const;
 
 export type ProjectListTabId = (typeof PROJECT_LIST_TABS)[number]["id"];
@@ -163,7 +161,7 @@ export type ProjectListRow = {
   contractorName: string | null;
   toMonitor: boolean;
   unit: string | null;
-  vote: string | null;
+  fundingTypeName: string | null;
   designProjectNo: string | null;
   tenderNo: string | null;
   oicName: string | null;
@@ -219,36 +217,14 @@ export function formatTenderQuotationNo(project: ProjectListRow) {
   return project.tenderNo ?? project.quotationOrContractNo ?? "—";
 }
 
-function hasDesignActivity(p: ProjectListRow) {
-  return Boolean(p.vote || p.designProjectNo);
-}
-
-function hasTenderingActivity(p: ProjectListRow) {
-  return Boolean(
-    p.tenderNo || p.tenderOpenDate || p.tenderClosingDate || p.tenderApprovedDate
-  );
-}
-
 export function projectMatchesTab(p: ProjectListRow, tab: ProjectListTabId) {
   if (tab === "all") return true;
-  if (tab === "keep-in-view") return p.toMonitor;
-  if (tab === "feasibility") {
-    return p.lifecycleStage === "planning" && !hasDesignActivity(p);
-  }
-  if (tab === "bca") {
-    return p.lifecycleStage === "planning" && hasDesignActivity(p);
-  }
-  if (tab === "design") {
-    return p.lifecycleStage === "pre_contract" && !hasTenderingActivity(p);
-  }
-  if (tab === "tender-quotation") {
-    return (
-      (p.lifecycleStage === "pre_contract" && hasTenderingActivity(p)) ||
-      p.lifecycleStage === "contract"
-    );
-  }
+  if (tab === "pre-design") return p.lifecycleStage === "pre_design";
+  if (tab === "design") return p.lifecycleStage === "design";
+  if (tab === "tender-quotation") return p.lifecycleStage === "quotation_tender";
   if (tab === "on-going") return p.lifecycleStage === "ongoing";
-  if (tab === "completed") return p.lifecycleStage === "closed";
+  if (tab === "completed") return p.lifecycleStage === "completed";
+  if (tab === "keep-in-view") return p.lifecycleStage === "keep_in_view";
   return true;
 }
 
@@ -266,7 +242,7 @@ export function projectMatchesSearch(p: ProjectListRow, query: string) {
     p.quotationOrContractNo,
     p.contractorName,
     p.unit,
-    p.vote,
+    p.fundingTypeName,
     p.designProjectNo,
     p.ministry,
     p.department,
@@ -281,7 +257,7 @@ export function projectMatchesSearch(p: ProjectListRow, query: string) {
 
 export function collectFilterOptions(projects: ProjectListRow[]) {
   const units = new Set<string>();
-  const votes = new Set<string>();
+  const fundingTypes = new Set<string>();
   const contractors = new Set<string>();
   const projectTypes = new Set<ProjectType>();
   const statuses = new Set<string>();
@@ -290,7 +266,7 @@ export function collectFilterOptions(projects: ProjectListRow[]) {
 
   for (const p of projects) {
     if (p.unit) units.add(p.unit);
-    if (p.vote) votes.add(p.vote);
+    if (p.fundingTypeName) fundingTypes.add(p.fundingTypeName);
     if (p.contractorName) contractors.add(p.contractorName);
     if (p.projectType) projectTypes.add(p.projectType);
     statuses.add(STAGE_STATUS_LABELS[p.lifecycleStage]);
@@ -300,7 +276,7 @@ export function collectFilterOptions(projects: ProjectListRow[]) {
 
   return {
     units: [...units].sort(),
-    votes: [...votes].sort(),
+    fundingTypes: sortFundingTypes([...fundingTypes].map((name) => ({ name }))).map((f) => f.name),
     contractors: [...contractors].sort(),
     projectTypes: [...projectTypes].sort((a, b) =>
       PROJECT_TYPE_LABELS[a].localeCompare(PROJECT_TYPE_LABELS[b])
@@ -315,12 +291,12 @@ export function projectMatchesDropdownFilters(
   p: ProjectListRow,
   filters: Pick<
     MasterListFilterState,
-    "search" | "unit" | "vote" | "contractor" | "projectType" | "projectStatus" | "ministry" | "department"
+    "search" | "unit" | "fundingType" | "contractor" | "projectType" | "projectStatus" | "ministry" | "department"
   >
 ) {
   if (!projectMatchesSearch(p, filters.search)) return false;
   if (filters.unit && p.unit !== filters.unit) return false;
-  if (filters.vote && p.vote !== filters.vote) return false;
+  if (filters.fundingType && p.fundingTypeName !== filters.fundingType) return false;
   if (filters.contractor && p.contractorName !== filters.contractor) return false;
   if (filters.projectType && p.projectType !== filters.projectType) return false;
   if (

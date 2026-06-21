@@ -7,26 +7,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormSaveActions, useFormDirty } from "@/components/ui/form-save-actions";
-import { CONTRACT_CATEGORY_LABELS, STAGE_STATUS_LABELS } from "@/lib/project-labels";
+import { CONTRACT_CATEGORY_LABELS, LIFECYCLE_STAGES, PROJECT_TYPES, PROJECT_TYPE_LABELS, STAGE_STATUS_LABELS } from "@/lib/project-labels";
+import { formatUnitOptionLabel, type UnitSectionOption } from "@/lib/units";
 
-type Option = { id: string; name?: string; ministry?: string; department?: string | null };
+type Option = UnitSectionOption;
 
 export function ProjectForm({
   sections,
-  clients,
+  ministries,
   fundingTypes,
-  officers,
   currentFyId,
-  defaultOicId,
+  currentFyLabel,
   defaultSectionId,
   project,
 }: {
   sections: Option[];
-  clients: Option[];
+  ministries: string[];
   fundingTypes: Option[];
-  officers: { id: string; name: string }[];
   currentFyId?: string;
-  defaultOicId?: string;
+  currentFyLabel?: string;
   defaultSectionId?: string;
   project?: {
     id: string;
@@ -34,17 +33,15 @@ export function ProjectForm({
     title: string;
     lifecycleStage: string;
     sectionId: string | null;
-    clientId: string | null;
+    clientMinistry?: string | null;
+    clientDepartment?: string | null;
     fundingTypeId: string | null;
-    oicUserId: string | null;
+    oicName: string | null;
+    oicEmail: string | null;
     toMonitor: boolean;
-    team: string | null;
-    allocation?: number;
     quotationOrContractNo?: string | null;
     projectType?: string | null;
     contractCategory?: string | null;
-    contractorName?: string | null;
-    supervisingOfficer?: string | null;
   };
 }) {
   const router = useRouter();
@@ -67,8 +64,6 @@ export function ProjectForm({
       body: JSON.stringify({
         ...body,
         toMonitor: form.get("toMonitor") === "on",
-        allocation: parseFloat(body.allocation as string) || 0,
-        financialYearId: currentFyId,
       }),
     });
     setLoading(false);
@@ -152,42 +147,30 @@ export function ProjectForm({
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
             >
               <option value="">— Select —</option>
-              <option value="quotations">Quotations</option>
-              <option value="contract_works">Contract Works</option>
-              <option value="consultancy">Consultancy</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="other">Other</option>
+              {PROJECT_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {PROJECT_TYPE_LABELS[type]}
+                </option>
+              ))}
             </select>
-          </div>
-          <div>
-            <Label htmlFor="contractorName">Contractor</Label>
-            <Input id="contractorName" name="contractorName" defaultValue={project?.contractorName ?? ""} />
-          </div>
-          <div>
-            <Label htmlFor="supervisingOfficer">Supervising Officer</Label>
-            <Input
-              id="supervisingOfficer"
-              name="supervisingOfficer"
-              defaultValue={project?.supervisingOfficer ?? ""}
-            />
           </div>
           <div>
             <Label htmlFor="lifecycleStage">Stage</Label>
             <select
               id="lifecycleStage"
               name="lifecycleStage"
-              defaultValue={project?.lifecycleStage ?? "planning"}
+              defaultValue={project?.lifecycleStage ?? "pre_design"}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
             >
-              <option value="planning">{STAGE_STATUS_LABELS.planning}</option>
-              <option value="pre_contract">{STAGE_STATUS_LABELS.pre_contract}</option>
-              <option value="contract">{STAGE_STATUS_LABELS.contract}</option>
-              <option value="ongoing">{STAGE_STATUS_LABELS.ongoing}</option>
-              <option value="closed">{STAGE_STATUS_LABELS.closed}</option>
+              {LIFECYCLE_STAGES.map((stage) => (
+                <option key={stage} value={stage}>
+                  {STAGE_STATUS_LABELS[stage]}
+                </option>
+              ))}
             </select>
           </div>
           <div>
-            <Label htmlFor="sectionId">Section</Label>
+            <Label htmlFor="sectionId">Unit (Head of Unit)</Label>
             <select
               id="sectionId"
               name="sectionId"
@@ -197,43 +180,57 @@ export function ProjectForm({
               <option value="">— Select —</option>
               {sections.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.name}
+                  {formatUnitOptionLabel(s)}
                 </option>
               ))}
             </select>
           </div>
-          <div>
-            <Label htmlFor="oicUserId">Project OIC</Label>
-            <select
-              id="oicUserId"
-              name="oicUserId"
-              defaultValue={project?.oicUserId ?? defaultOicId ?? ""}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            >
-              <option value="">— Select —</option>
-              {officers.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.name}
-                </option>
-              ))}
-            </select>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="oicName">Project OIC — Full name</Label>
+              <Input
+                id="oicName"
+                name="oicName"
+                defaultValue={project?.oicName ?? ""}
+                placeholder="Full name of officer in charge"
+              />
+            </div>
+            <div>
+              <Label htmlFor="oicEmail">Govt email</Label>
+              <Input
+                id="oicEmail"
+                name="oicEmail"
+                type="email"
+                defaultValue={project?.oicEmail ?? ""}
+                placeholder="name@ministry.gov.bn"
+              />
+            </div>
           </div>
-          <div>
-            <Label htmlFor="clientId">Client</Label>
-            <select
-              id="clientId"
-              name="clientId"
-              defaultValue={project?.clientId ?? ""}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            >
-              <option value="">— Select —</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.ministry}
-                  {c.department ? ` — ${c.department}` : ""}
-                </option>
-              ))}
-            </select>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="clientMinistry">Client ministry</Label>
+              <Input
+                id="clientMinistry"
+                name="clientMinistry"
+                list="clientMinistries"
+                defaultValue={project?.clientMinistry ?? ""}
+                placeholder="e.g. Ministry of Education"
+              />
+              <datalist id="clientMinistries">
+                {ministries.map((ministry) => (
+                  <option key={ministry} value={ministry} />
+                ))}
+              </datalist>
+            </div>
+            <div>
+              <Label htmlFor="clientDepartment">Client department</Label>
+              <Input
+                id="clientDepartment"
+                name="clientDepartment"
+                defaultValue={project?.clientDepartment ?? ""}
+                placeholder="e.g. School Infrastructure"
+              />
+            </div>
           </div>
           <div>
             <Label htmlFor="fundingTypeId">Funding Type</Label>
@@ -250,23 +247,6 @@ export function ProjectForm({
                 </option>
               ))}
             </select>
-          </div>
-          {!project && currentFyId && (
-            <div>
-              <Label htmlFor="allocation">FY Allocation ($)</Label>
-              <Input
-                id="allocation"
-                name="allocation"
-                type="number"
-                min="0"
-                step="1000"
-                defaultValue={0}
-              />
-            </div>
-          )}
-          <div>
-            <Label htmlFor="team">Team</Label>
-            <Input id="team" name="team" defaultValue={project?.team ?? ""} />
           </div>
           <div className="flex items-center gap-2">
             <input

@@ -1,7 +1,7 @@
 export type MasterListFilterState = {
   search: string;
   unit: string;
-  vote: string;
+  fundingType: string;
   contractor: string;
   projectType: string;
   projectStatus: string;
@@ -12,7 +12,7 @@ export type MasterListFilterState = {
 export const EMPTY_MASTER_LIST_FILTERS: MasterListFilterState = {
   search: "",
   unit: "",
-  vote: "",
+  fundingType: "",
   contractor: "",
   projectType: "",
   projectStatus: "",
@@ -23,7 +23,7 @@ export const EMPTY_MASTER_LIST_FILTERS: MasterListFilterState = {
 export function countActiveMasterListFilters(filters: MasterListFilterState) {
   return [
     filters.unit,
-    filters.vote,
+    filters.fundingType,
     filters.contractor,
     filters.projectType,
     filters.projectStatus,

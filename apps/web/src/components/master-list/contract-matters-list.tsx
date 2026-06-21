@@ -11,6 +11,7 @@ import {
   type ContractMatterRequestRow,
 } from "@/lib/contract-matters-filters";
 import { cn } from "@/lib/utils";
+import { formatProgressClaimNo } from "@/lib/payment-valuation";
 import {
   DesktopDataTable,
   desktopTdClass,
@@ -138,12 +139,18 @@ function RequestStatusPill({ status }: { status: string | null }) {
   );
 }
 
+function paymentReferenceValue(r: ContractMatterLineRow) {
+  return r.description ?? "—";
+}
+
 export function PaymentTable({
   rows,
   descriptionLabel = "Description",
+  showProgressClaimNo = false,
 }: {
   rows: ContractMatterLineRow[];
   descriptionLabel?: string;
+  showProgressClaimNo?: boolean;
 }) {
   if (rows.length === 0) return null;
   return (
@@ -161,7 +168,13 @@ export function PaymentTable({
                 span={3}
               />
               <MobileField label="Contractor" value={<ContractorPill name={r.contractorName} />} />
-              <MobileField label={descriptionLabel} value={r.description ?? "—"} span={3} />
+              {showProgressClaimNo && (
+                <MobileField
+                  label="Progress Claim No."
+                  value={formatProgressClaimNo(r.progressClaimNo)}
+                />
+              )}
+              <MobileField label={descriptionLabel} value={paymentReferenceValue(r)} span={3} />
               <MobileField label="Date claim" value={formatDate(r.claimDate)} />
               <MobileField label="Date certified" value={formatDate(r.date)} />
               <MobileField
@@ -180,6 +193,9 @@ export function PaymentTable({
           <th className={sharedProjectThClass}>Project</th>
           <th className={sharedRefsThClass}>Quotation / contract no.</th>
           <th className={sharedContractorThClass}>Contractor</th>
+          {showProgressClaimNo && (
+            <th className={paymentTrailingThClass}>Progress Claim No.</th>
+          )}
           <th className={paymentTrailingThClass}>{descriptionLabel}</th>
           <th className={paymentTrailingThClass}>Date Claim</th>
           <th className={paymentTrailingThClass}>Date Certified</th>
@@ -203,7 +219,14 @@ export function PaymentTable({
             <td className={sharedContractorTdClass}>
               <ContractorPill name={r.contractorName} />
             </td>
-            <td className={cn(paymentTrailingTdClass, "text-slate-600")}>{r.description ?? "—"}</td>
+            {showProgressClaimNo && (
+              <td className={cn(paymentTrailingTdClass, "text-slate-600")}>
+                {formatProgressClaimNo(r.progressClaimNo)}
+              </td>
+            )}
+            <td className={cn(paymentTrailingTdClass, "text-slate-600")}>
+              {paymentReferenceValue(r)}
+            </td>
             <td className={cn(paymentTrailingTdClass, "text-slate-600")}>{formatDate(r.claimDate)}</td>
             <td className={cn(paymentTrailingTdClass, "text-slate-600")}>{formatDate(r.date)}</td>
             <td className={paymentTrailingTdClass}>

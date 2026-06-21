@@ -16,11 +16,12 @@ enum Role {
 }
 
 enum LifecycleStage {
-  planning
-  pre_contract
-  contract
+  pre_design
+  design
+  quotation_tender
   ongoing
-  closed
+  completed
+  keep_in_view
 }
 
 enum ProjectType {
@@ -28,6 +29,7 @@ enum ProjectType {
   contract_works
   consultancy
   maintenance
+  bca
   other
 }
 
@@ -60,6 +62,8 @@ model Section {
   name      String          @unique
   code      String?         @unique
   unitLabel String?
+  headName  String?
+  headEmail String?
   users     User[]
   projects  Project[]
   budgets   SectionBudget[]
@@ -88,15 +92,33 @@ model FinancialYear {
   isCurrent      Boolean         @default(false)
   budgets        ProjectBudget[]
   sectionBudgets SectionBudget[]
+  fundingTypeBudgets FundingTypeBudget[]
   createdAt      DateTime        @default(now())
 }
 
 model FundingType {
-  id           String    @id @default(cuid())
-  name         String    @unique
+  id           String              @id @default(cuid())
+  name         String              @unique
   mainCategory String?
   projects     Project[]
-  createdAt    DateTime  @default(now())
+  budgets      FundingTypeBudget[]
+  createdAt    DateTime            @default(now())
+}
+
+model FundingTypeBudget {
+  id                  String        @id @default(cuid())
+  fundingTypeId       String
+  fundingType         FundingType   @relation(fields: [fundingTypeId], references: [id], onDelete: Cascade)
+  financialYearId     String
+  financialYear       FinancialYear @relation(fields: [financialYearId], references: [id])
+  allocation          Float         @default(0)
+  encumbranceTotal    Float         @default(0)
+  encumbranceBalance  Float         @default(0)
+  budgetSummaryLocked Boolean       @default(false)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  @@unique([fundingTypeId, financialYearId])
 }
 
 model Client {
@@ -113,7 +135,7 @@ model Project {
   id                    String           @id @default(cuid())
   projectNumber         String           @unique
   title                 String
-  lifecycleStage        LifecycleStage   @default(planning)
+  lifecycleStage        LifecycleStage   @default(pre_design)
   projectType           ProjectType?
   contractCategory      ContractCategory?
   quotationOrContractNo String?
@@ -121,9 +143,6 @@ model Project {
   toMonitor             Boolean          @default(false)
   team                  String?
   contractorName        String?
-  supervisingOfficer    String?
-  architectName         String?
-  clientsNotes          String?
   sectionId             String?
   section               Section?         @relation(fields: [sectionId], references: [id])
   clientId              String?
@@ -132,6 +151,8 @@ model Project {
   fundingType           FundingType?     @relation(fields: [fundingTypeId], references: [id])
   oicUserId             String?
   oic                   User?            @relation("ProjectOic", fields: [oicUserId], references: [id])
+  oicName               String?
+  oicEmail              String?
   design                ProjectDesign?
   bca                   ProjectBca?
   feasibility           ProjectFeasibility?
@@ -152,27 +173,23 @@ model Project {
 }
 
 model ProjectDesign {
-  id                 String    @id @default(cuid())
-  projectId          String    @unique
-  project            Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  vote               String?
-  govtEstimate       Float?
-  contractPeriod     String?
-  designProjectNo    String?
-  designProgressAsOf DateTime?
-  archProgress       Float?
-  qsProgress         Float?
-  steProgress        Float?
-  meProgress         Float?
-  estimate           Float?
-  revisedEstimate    Float?
-  svAmount           Float?
+  id                         String    @id @default(cuid())
+  projectId                  String    @unique
+  project                    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  preliminaryEstimate        Float?
+  designProjectNo            String?
+  designProgressAsOf         DateTime?
+  svAmount                   Float?
+  dateDrawingsCompleted      DateTime?
+  dateMeBqReceived           DateTime?
+  dateBqCompleted            DateTime?
+  dateOtherDocumentsReceived DateTime?
   dateConfirmed              DateTime?
   quotationTenderDueDate     DateTime?
   actualQuotationTenderDate  DateTime?
-  remarks            String?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  remarks                    String?
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
 }
 
 model ProjectBca {
@@ -207,12 +224,14 @@ model ProjectTendering {
   projectId                  String    @unique
   project                    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   tenderNo                   String?
+  completionPeriod           String?
   openDate                   DateTime?
   closingDate                DateTime?
   extendedClosingDate        DateTime?
   receivedDate               DateTime?
   assessmentSubmittedDate    DateTime?
   recommendationDate         DateTime?
+  recommendationFromDbsoDate DateTime?
   awardedDate                DateTime?
   approvedDate               DateTime?
   loaDate                    DateTime?
@@ -239,14 +258,18 @@ model ContractDetails {
   revisedContractFinish DateTime?
   sitePossessionDate    DateTime?
   loaIssued             DateTime?
-  cncDate               DateTime?
+  bgStartDate           DateTime?
   bgExpiry              DateTime?
-  performanceBondExpiry DateTime?
+  insuranceStartDate    DateTime?
   insuranceExpiry       DateTime?
+  cncDate               DateTime?
+  performanceBondExpiry DateTime?
   contractSigned        DateTime?
   cpcDate               DateTime?
   cpcIssued             DateTime?
   edlp                  DateTime?
+  revisedEdlpDate       DateTime?
+  cmgdIssuedDate        DateTime?
   finalAccountSum       Float?
   retentionSum          Float?
   remarks               String?
@@ -323,6 +346,7 @@ model ProjectBudget {
   allocation         Float         @default(0)
   encumbranceTotal   Float         @default(0)
   encumbranceBalance Float         @default(0)
+  budgetSummaryLocked Boolean      @default(false)
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -330,44 +354,59 @@ model ProjectBudget {
 }
 
 model BudgetLine {
-  id              String         @id @default(cuid())
-  projectId       String
-  project         Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  financialYearId String?
-  fsorJoId        String?        @unique
-  type            BudgetLineType
-  date            DateTime?
-  claimDate       DateTime?
-  description     String?
-  amountApproved  Float          @default(0)
-  amountCertified Float?
-  amountBalance   Float?
-  voucherRef      String?
-  createdAt       DateTime       @default(now())
+  id                   String          @id @default(cuid())
+  projectId            String
+  project              Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  financialYearId      String?
+  fsorJoId             String?         @unique
+  type                 BudgetLineType
+  date                 DateTime?
+  claimDate            DateTime?
+  description          String?
+  progressClaimNo      Int?
+  amountApproved       Float           @default(0)
+  amountCertified      Float?
+  amountBalance        Float?
+  voucherRef           String?
+  createdAt            DateTime        @default(now())
+  purchaseOrder        PurchaseOrder?
+  warrantPurchaseOrders PurchaseOrder[] @relation("WarrantPurchaseOrders")
 }
 
 model VariationOrder {
-  id            String    @id @default(cuid())
-  projectId     String
-  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  voNo          String?
-  amount        Float     @default(0)
-  submittedDate DateTime?
-  approvedDate  DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                    String    @id @default(cuid())
+  projectId             String
+  project               Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  submittedToSbmDate    DateTime?
+  receivedByDbsoDate    DateTime?
+  committeeReviewDate     DateTime?
+  submittedToDgoDate    DateTime?
+  submittedToClientDate DateTime?
+  approvedDate          DateTime?
+  voAmount              Float?
+  voPercent             Float?
+  revisedContractSum    Float?
+  isLocked              Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }
 
 model ExtensionOfTime {
-  id            String    @id @default(cuid())
-  projectId     String
-  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  eotNo         String?
-  eotPeriod     String?
-  submittedDate DateTime?
-  approvedDate  DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                    String    @id @default(cuid())
+  projectId             String
+  project               Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  submittedToSbmDate    DateTime?
+  receivedByDbsoDate    DateTime?
+  committeeReviewDate   DateTime?
+  submittedToDgoDate    DateTime?
+  submittedToClientDate DateTime?
+  approvedDate          DateTime?
+  eotPeriod             String?
+  eotPercent            Float?
+  revisedCompletionDate DateTime?
+  isLocked              Boolean   @default(false)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 }
 
 model JobOrder {
@@ -389,20 +428,24 @@ model JobOrder {
 }
 
 model PurchaseOrder {
-  id              String    @id @default(cuid())
+  id              String      @id @default(cuid())
   projectId       String
-  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project         Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  budgetLineId    String?     @unique
+  budgetLine      BudgetLine? @relation(fields: [budgetLineId], references: [id], onDelete: SetNull)
+  warrantLineId   String?
+  warrantLine     BudgetLine? @relation("WarrantPurchaseOrders", fields: [warrantLineId], references: [id], onDelete: SetNull)
   poId            String?
   claimDate       DateTime?
   claimCertified  Float?
-  poAmount        Float     @default(0)
+  poAmount        Float       @default(0)
   sesDate         DateTime?
   invoiceDate     DateTime?
   eDispatchedDate DateTime?
   eDispatchRef    String?
   paidDate        DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 }
 
 model MatterRequest {
