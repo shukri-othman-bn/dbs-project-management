@@ -1,11 +1,10 @@
-import type { getProjectsWithBudget } from "./data";
+import type { getProjectsWithBudget, ProjectWithBudget } from "./data";
 import { getProjectOicDisplayName } from "./project-people";
 import { getUnitLabel } from "./units";
 import type { ContractMatterLineRow, ContractMatterProjectRow, ContractMatterVariationOrderRow, ContractMatterEotRow, ContractMatterJobOrderRow, ContractMatterPurchaseOrderRow, ContractMatterRequestRow } from "./contract-matters-filters";
 import type { getMatterRequests } from "./data";
 import type { ContractorTrackRecordRow } from "./contractor-track-record";
 import type { ProjectListRow } from "./project-list-filters";
-type ProjectWithBudget = Awaited<ReturnType<typeof getProjectsWithBudget>>[number];
 type MatterRequestRecord = Awaited<ReturnType<typeof getMatterRequests>>[number];
 
 function latestApprovedEotDate(

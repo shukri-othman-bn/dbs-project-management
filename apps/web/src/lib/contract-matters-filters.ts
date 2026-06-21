@@ -187,7 +187,7 @@ export function projectMatchesContractMatterSearch(
     | "contractNo"
     | "contractorName"
     | "unit"
-    | "fundingType"
+    | "fundingTypeName"
     | "ministry"
     | "department"
     | "projectType"

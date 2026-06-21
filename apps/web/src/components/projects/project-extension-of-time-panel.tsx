@@ -40,6 +40,7 @@ type ExtensionOfTime = ExtensionOfTimeCalcRecord & {
   committeeReviewDate: Date | null;
   submittedToDgoDate: Date | null;
   submittedToClientDate: Date | null;
+  approvedDate: Date | null;
   eotPercent: number | null;
   revisedCompletionDate: Date | null;
   isLocked: boolean;

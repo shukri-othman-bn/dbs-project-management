@@ -66,7 +66,7 @@ export function projectFilterForUser(user: SessionUser) {
   if (user.role === Role.OFFICER) {
     if (user.email) {
       return {
-        OR: [{ oicUserId: user.id }, { oicEmail: { equals: user.email, mode: "insensitive" } }],
+        OR: [{ oicUserId: user.id }, { oicEmail: { equals: user.email, mode: "insensitive" as const } }],
       };
     }
     return { oicUserId: user.id };

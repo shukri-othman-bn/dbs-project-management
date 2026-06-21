@@ -544,7 +544,7 @@ export function BudgetPanel({
                             <Button
                               type="button"
                               size="sm"
-                              variant={po.id === activePoId ? "default" : "secondary"}
+                              variant={po.id === activePoId ? "primary" : "secondary"}
                               onClick={() => setSelectedPoId(po.id)}
                             >
                               {po.id === activePoId ? "Selected" : "Edit"}
@@ -602,7 +602,7 @@ export function BudgetPanel({
                               <Button
                                 type="button"
                                 size="sm"
-                                variant={isSelected ? "default" : "secondary"}
+                                variant={isSelected ? "primary" : "secondary"}
                                 onClick={() => setSelectedPoId(po.id)}
                               >
                                 {isSelected ? "Selected" : "Edit"}

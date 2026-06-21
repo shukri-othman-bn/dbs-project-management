@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
-import { computeBudgetTotals, sumPayments } from "./budget";
+import { computeBudgetTotals, sumPayments, type BudgetTotals } from "./budget";
+import type { Prisma } from "@prisma/client";
 import { DEPARTMENT_FUNDING_TYPE_NAMES, EQUAL_SPLIT_UNIT_FUNDING_TYPE_CODES, fundingTypeCode, fundingTypeLabel } from "./funding-types";
 import { sumPoEncumbrance, sumPoPaid } from "./purchase-order-sync";
 import { projectFilterForUser, matterRequestFilterForUser, SessionUser, canViewAllProjects } from "./permissions";
@@ -24,6 +25,20 @@ const projectAllocationInclude = {
   extensionOfTimes: { orderBy: { createdAt: "asc" as const } },
   jobOrders: { orderBy: { joStart: "desc" as const } },
   purchaseOrders: { orderBy: { claimDate: "desc" as const } },
+};
+
+export type ProjectWithBudget = Prisma.ProjectGetPayload<{
+  include: typeof projectAllocationInclude;
+}> & {
+  budget:
+    | Prisma.ProjectGetPayload<{ include: { budgets: true } }>["budgets"][number]
+    | undefined;
+  totals: BudgetTotals;
+  latestStatus:
+    | Prisma.ProjectGetPayload<{
+        include: { statusUpdates: { orderBy: { progressAsOf: "desc" }; take: 1 } };
+      }>["statusUpdates"][number]
+    | undefined;
 };
 
 type ProjectRollupSource = Awaited<
@@ -188,7 +203,7 @@ export async function getCurrentFinancialYear() {
 export async function getProjectsWithBudget(
   user: SessionUser,
   options?: { allBudgetLines?: boolean }
-) {
+): Promise<ProjectWithBudget[]> {
   const filter = projectFilterForUser(user);
   const allBudgetLines = options?.allBudgetLines ?? false;
   const { fy, allocationByProject } = await computeDepartmentAllocations({ allBudgetLines });
@@ -232,8 +247,6 @@ export async function getMatterRequests(user: SessionUser) {
     orderBy: { complaintReceived: "desc" },
   });
 }
-
-type ProjectWithBudget = Awaited<ReturnType<typeof getProjectsWithBudget>>[number];
 
 export type FundingTypeBudgetRow = {
   code: string;
@@ -518,8 +531,8 @@ function buildUnitFundingTypeBreakdown(
   });
 }
 
-function aggregateProjectsBySectionId(projects: ProjectRollupSource[]) {
-  const bySectionId: Record<string, ProjectRollupSource[]> = {};
+function aggregateProjectsBySectionId<T extends ProjectRollupSource>(projects: T[]) {
+  const bySectionId: Record<string, T[]> = {};
   for (const project of projects) {
     if (!project.sectionId) continue;
     if (!bySectionId[project.sectionId]) bySectionId[project.sectionId] = [];

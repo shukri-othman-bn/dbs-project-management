@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from "@prisma/client";
+import { PrismaClient, ProjectType, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { defaultUnitAllocation, defaultUnitHead, LEGACY_SECTION_CODES, UNIT_CODES } from "../src/lib/units";
 import {
@@ -758,7 +758,7 @@ async function main() {
       oicName?: string;
       oicEmail?: string;
       quotationOrContractNo?: string;
-      projectType?: string;
+      projectType?: ProjectType;
       contractorName?: string;
     };
     const oicName = seedProject.oicName ?? `Project Officer (${unitCode})`;
@@ -871,7 +871,7 @@ async function main() {
     }
 
     const postAwardStages = ["quotation_tender", "ongoing", "completed"] as const;
-    if (postAwardStages.includes(projectData.lifecycleStage)) {
+    if ((postAwardStages as readonly string[]).includes(projectData.lifecycleStage)) {
       const contractData = {
         mainContractor: "ABC Construction Sdn Bhd",
         contractNo: `CTR-${projectData.projectNumber}`,

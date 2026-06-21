@@ -14,8 +14,16 @@ export const DASHBOARD_METRIC_DEFINITIONS = {
 } as const;
 
 type ProjectWithTotals = {
+  id: string;
+  projectNumber: string;
+  title: string;
   lifecycleStage: LifecycleStage;
-  totals: { rag: RagStatus };
+  section: {
+    code?: string | null;
+    unitLabel?: string | null;
+    name: string;
+  } | null;
+  totals: { rag: RagStatus; utilizationPct: number };
 };
 
 const RAG_ATTENTION_ORDER: Record<RagStatus, number> = {

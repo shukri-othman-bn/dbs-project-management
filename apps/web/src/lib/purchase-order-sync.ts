@@ -12,6 +12,7 @@ export type PaymentLineForSync = Pick<
   | "claimDate"
   | "amountApproved"
   | "amountCertified"
+  | "amountBalance"
 >;
 
 export class WarrantInsufficientError extends Error {
@@ -46,6 +47,7 @@ export async function checkWarrantCoversCertifiedPayments(
           claimDate: true,
           amountApproved: true,
           amountCertified: true,
+          amountBalance: true,
         },
       });
 
@@ -74,6 +76,7 @@ export async function syncPurchaseOrderForPaymentLine(
       claimDate: true,
       amountApproved: true,
       amountCertified: true,
+      amountBalance: true,
     },
   });
 
