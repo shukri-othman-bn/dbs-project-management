@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AppLogo } from "@/components/layout/app-logo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -36,9 +37,12 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-4">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>DBS Project Management</CardTitle>
-          <p className="text-sm text-slate-500">Sign in to access your department dashboard</p>
+        <CardHeader className="items-center space-y-4 text-center">
+          <AppLogo showSubtitle={false} priority imageClassName="max-w-[240px]" />
+          <div>
+            <CardTitle>DBS Project Management</CardTitle>
+            <p className="mt-1 text-sm text-slate-500">Sign in to access your department dashboard</p>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

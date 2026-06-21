@@ -5,6 +5,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "DBS Project Management",
   description: "Department project and budget monitoring platform",
+  icons: {
+    icon: "/dbs-logo.png",
+  },
 };
 
 export default function RootLayout({

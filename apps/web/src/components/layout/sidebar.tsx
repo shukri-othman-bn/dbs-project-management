@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS } from "@/lib/budget";
 import { MASTER_LIST_VIEWS } from "@/lib/master-list-views";
+import { AppLogo } from "@/components/layout/app-logo";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["DIRECTOR", "HOS", "OFFICER", "PROJECT_ADMIN", "ADMIN"] },
@@ -78,9 +79,8 @@ export function SidebarPanel({
 
   return (
     <aside className={cn(sidebarAsideClass, className)}>
-      <div className="border-b border-slate-700 px-6 py-5">
-        <h1 className="text-lg font-bold tracking-tight">DBS Projects</h1>
-        <p className="mt-1 text-xs text-slate-400">Department Management</p>
+      <div className="border-b border-slate-700 px-4 py-5">
+        <AppLogo showSubtitle subtitle="Project Management" priority />
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {items.slice(0, 1).map((item) => {

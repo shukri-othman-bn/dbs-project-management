@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SidebarPanel, SidebarDesktop } from "./sidebar";
+import { AppLogoCompact } from "./app-logo";
 
 export function AppShellLayout({
   user,
@@ -74,7 +75,7 @@ export function AppShellLayout({
           >
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
-          <span className="text-base font-semibold text-slate-900">DBS Projects</span>
+          <AppLogoCompact />
         </header>
 
         <main className="flex-1 overflow-auto">
